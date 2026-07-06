@@ -870,6 +870,20 @@ function LandingPage({ onSuccess }) {
   const inputsRef = useRef([]);
   const triedRef = useRef(false);
 
+  // Access code entry is only reachable at /#admin â€” everyone else just clicks Get Started
+  const adminMode = typeof window !== "undefined" && window.location.hash === "#admin";
+  const launchNow = () => {
+    setSuccessRole("member");
+    setPhase("success");
+    setTimeout(() => setPhase("launching"), 500);
+    setTimeout(() => onSuccess("member"), 1600);
+  };
+  const handleEnter = () => {
+    if (phase !== "idle") return;
+    if (adminMode) setPhase("entering");
+    else launchNow();
+  };
+
   const filled = code.filter(d => d).length;
   const isEntering = phase === "entering" || phase === "checking";
   const isSuccess = phase === "success" || phase === "launching";
@@ -970,7 +984,7 @@ function LandingPage({ onSuccess }) {
         display: "flex", flexDirection: "column", alignItems: "center",
       }}>
         <div
-          onClick={() => phase === "idle" && setPhase("entering")}
+          onClick={handleEnter}
           style={{
             width: "clamp(280px, 50vmin, 520px)",
             height: "clamp(280px, 50vmin, 520px)",
@@ -1028,7 +1042,7 @@ function LandingPage({ onSuccess }) {
         {/* Enter button  idle only */}
         {phase === "idle" && (
           <button
-            onClick={() => setPhase("entering")}
+            onClick={handleEnter}
             style={{
               marginTop: 32,
               fontFamily: "DM Serif Display, serif",
@@ -1057,7 +1071,7 @@ function LandingPage({ onSuccess }) {
               e.currentTarget.style.color = T.red;
             }}
           >
-            get involved
+            get started
           </button>
         )}
 
@@ -3314,60 +3328,6 @@ function AdminPage() {
   );
 }
 
-// --- Get Started Screen ---
-function GetStartedScreen({ role, onSuccess }) {
-  return (
-    <div style={{
-      minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
-      padding: 24, position: "relative", overflow: "hidden", background: T.bg,
-    }}>
-      <ArrowDecor style={{ top: -100, left: -120, transform: "rotate(-20deg)" }} />
-
-      <div style={{
-        width: "100%", maxWidth: 420, animation: "fadeUp 0.4s ease",
-      }}>
-        {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <Logo size={36} />
-          <h1 style={{
-            fontFamily: "Outfit", fontSize: 24, fontWeight: 800,
-            letterSpacing: "-0.02em", marginTop: 16,
-          }}>
-            You're in
-          </h1>
-          <p style={{ color: T.textMuted, fontSize: 14, marginTop: 8 }}>
-            No account needed. Click below to jump in.
-          </p>
-          <span style={{
-            display: "inline-block", marginTop: 10, padding: "3px 12px", borderRadius: 6,
-            fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em",
-            background: T.redSoft, color: T.red, border: `1px solid ${T.red}22`,
-          }}>
-            {role} access
-          </span>
-        </div>
-
-        <div style={{
-          background: T.bgCard, borderRadius: 20, padding: "32px 28px",
-          border: `1px solid ${T.border}`,
-        }}>
-          <button onClick={onSuccess} style={{
-            width: "100%", padding: "12px 0", borderRadius: 10,
-            fontSize: 14, fontFamily: "DM Sans", fontWeight: 700,
-            background: T.red, color: T.white, border: "none",
-            cursor: "pointer",
-            boxShadow: `0 0 20px ${T.redGlow}`,
-            transition: "all 0.2s ease",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.02)"; }}
-          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
-            Get Started
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // --- App Shell ---
 function AppShell({ role, profile, onLogout, onProfileUpdate }) {
@@ -3429,23 +3389,18 @@ export default function SideHustleClub() {
     })();
   }, []);
 
-  // Step 1: Access code entered â†’ go to get started screen
+  // Step 1: Get Started clicked (or admin code entered) â†’ go straight to app or onboarding
   const handleAccessSuccess = (r) => {
     setRole(r);
     setStoredRole(r);
-    setView("auth");
-  };
-
-  // Step 2: Get started clicked â†’ go to app or onboarding
-  const handleGetStarted = () => {
-    if (role === "admin") {
+    if (r === "admin") {
       setView("app");
     } else {
       setView("onboarding");
     }
   };
 
-  // Step 3: Onboarding complete â†’ go to app
+  // Step 2: Onboarding complete â†’ go to app
   const handleOnboardingComplete = (p) => { setProfile(p); setStoredProfileId(p.id); setView("app"); };
 
   const handleProfileUpdate = async (updatedProfile) => {
@@ -3468,7 +3423,6 @@ export default function SideHustleClub() {
     <div style={{ background:T.bg, minHeight:"100vh" }}>
       <style>{GLOBAL_CSS}</style>
       {view === "landing" && <LandingPage onSuccess={handleAccessSuccess} />}
-      {view === "auth" && <GetStartedScreen role={role} onSuccess={handleGetStarted} />}
       {view === "onboarding" && <Onboarding role={role} onComplete={handleOnboardingComplete} />}
       {view === "app" && <AppShell role={role} profile={profile} onLogout={handleLogout} onProfileUpdate={handleProfileUpdate} />}
     </div>
