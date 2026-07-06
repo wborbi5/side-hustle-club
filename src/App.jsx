@@ -1267,8 +1267,9 @@ const NAV_ITEMS = [
 ];
 const ADMIN_NAV = [{ id:"admin", label:"Admin Panel", icon:"âš™" }];
 
-function Sidebar({ active, onNav, role, onLogout, profileName }) {
-  const items = role === "admin" ? [...NAV_ITEMS, ...ADMIN_NAV] : NAV_ITEMS;
+function Sidebar({ active, onNav, role, onLogout, profileName, hasProfile }) {
+  const base = hasProfile ? NAV_ITEMS : NAV_ITEMS.filter(i => i.id !== "myprofile");
+  const items = role === "admin" ? [...base, ...ADMIN_NAV] : base;
   const [hovered, setHovered] = useState(null);
   return (
     <div style={{
@@ -3396,7 +3397,7 @@ function AppShell({ role, profile, onLogout, onProfileUpdate }) {
   };
   return (
     <div style={{ display:"flex", flexDirection:"column", minHeight:"100vh" }}>
-      <Sidebar active={page} onNav={(p) => { setPage(p); setEditing(false); }} role={role} onLogout={onLogout} profileName={profile?.name} />
+      <Sidebar active={page} onNav={(p) => { setPage(p); setEditing(false); }} role={role} onLogout={onLogout} profileName={profile?.name} hasProfile={!!profile} />
       <div style={{ flex:1, overflow:"auto" }}>
         {pages[page] || pages.dashboard}
       </div>
@@ -3440,19 +3441,12 @@ export default function SideHustleClub() {
     })();
   }, []);
 
-  // Step 1: Get Started clicked (or admin code entered) â†’ go straight to app or onboarding
+  // Get Started clicked (or admin code entered) â†’ straight into the app as a guest
   const handleAccessSuccess = (r) => {
     setRole(r);
     setStoredRole(r);
-    if (r === "admin") {
-      setView("app");
-    } else {
-      setView("onboarding");
-    }
+    setView("app");
   };
-
-  // Step 2: Onboarding complete â†’ go to app
-  const handleOnboardingComplete = (p) => { setProfile(p); setStoredProfileId(p.id); setView("app"); };
 
   const handleProfileUpdate = async (updatedProfile) => {
     setProfile(updatedProfile);
@@ -3474,7 +3468,6 @@ export default function SideHustleClub() {
     <div style={{ background:T.bg, minHeight:"100vh" }}>
       <style>{GLOBAL_CSS}</style>
       {view === "landing" && <LandingPage onSuccess={handleAccessSuccess} />}
-      {view === "onboarding" && <Onboarding role={role} onComplete={handleOnboardingComplete} />}
       {view === "app" && <AppShell role={role} profile={profile} onLogout={handleLogout} onProfileUpdate={handleProfileUpdate} />}
     </div>
   );
