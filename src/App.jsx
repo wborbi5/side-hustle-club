@@ -72,10 +72,6 @@ function getStoredRole() { try { return localStorage.getItem("shc-role"); } catc
 function setStoredRole(r) { try { localStorage.setItem("shc-role", r); } catch {} }
 function clearStoredRole() { try { localStorage.removeItem("shc-role"); } catch {} }
 
-// Profile id stored in localStorage so returning visitors skip straight to the app
-function getStoredProfileId() { try { return localStorage.getItem("shc-profile-id"); } catch { return null; } }
-function setStoredProfileId(id) { try { localStorage.setItem("shc-profile-id", id); } catch {} }
-function clearStoredProfileId() { try { localStorage.removeItem("shc-profile-id"); } catch {} }
 
 const db = {
   // --- Auth / Codes ---
@@ -99,24 +95,6 @@ const db = {
   },
 
   // --- Profiles ---
-  async getProfileByUserId(userId) {
-    const { data, error } = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
-    if (error) { console.error("getProfileByUserId error:", error); return null; }
-    return data ? rowToProfile(data) : null;
-  },
-
-  async getProfileByEmail(email) {
-    const { data, error } = await supabase.from("profiles").select("*").eq("email", email.toLowerCase()).maybeSingle();
-    if (error) { console.error("getProfileByEmail error:", error); return null; }
-    return data ? rowToProfile(data) : null;
-  },
-
-  async claimProfile(profileId, userId) {
-    // Link an admin-created profile to an auth user
-    const { data, error } = await supabase.from("profiles").update({ user_id: userId }).eq("id", profileId).select().single();
-    if (error) throw error;
-    return rowToProfile(data);
-  },
   async getProfiles(role) {
     let query = supabase.from("profiles").select("*").order("created_at", { ascending: false });
     if (role) query = query.eq("role", role);
@@ -124,10 +102,6 @@ const db = {
     return (data || []).map(rowToProfile);
   },
 
-  async getProfile(id) {
-    const { data } = await supabase.from("profiles").select("*").eq("id", id).single();
-    return data ? rowToProfile(data) : null;
-  },
 
   async createProfile(profileData) {
     const row = profileToRow(profileData);
@@ -249,9 +223,6 @@ function Logo({ size = 32 }) {
   return <img src={ARROW_IMG} alt="SHC" style={{ width: size, height: size, objectFit: "contain" }} />;
 }
 
-function ArrowDecor({ style }) {
-  return <div style={{ position: "absolute", opacity: 0.04, ...style }}><Logo size={300} /></div>;
-}
 
 const inputStyle = {
   width: "100%", padding: "12px 16px", borderRadius: 10,
@@ -310,7 +281,7 @@ function TagInput({ label, tags, onChange, placeholder, suggestions }) {
             animation: "scaleIn 0.15s ease",
           }}>
             {tag}
-            <span onClick={() => remove(i)} style={{ cursor: "pointer", opacity: 0.6, fontSize: 14, lineHeight: 1 }}>Ã—</span>
+            <span onClick={() => remove(i)} style={{ cursor: "pointer", opacity: 0.6, fontSize: 14, lineHeight: 1 }}>x</span>
           </span>
         ))}
         <input
@@ -439,7 +410,7 @@ function ProjectFilesUpload({ files, onChange }) {
   return (
     <div style={{ marginBottom: 16 }}>
       <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: T.textMuted, marginBottom: 8 }}>
-        Project Files <span style={{ fontWeight: 400, color: T.textDim }}>(up to 6 Â· screenshots, mockups, demos)</span>
+        Project Files <span style={{ fontWeight: 400, color: T.textDim }}>(up to 6 - screenshots, mockups, demos)</span>
       </label>
 
       {/* Uploaded files grid */}
@@ -458,7 +429,7 @@ function ProjectFilesUpload({ files, onChange }) {
                   alignItems: "center", justifyContent: "center", borderBottom: `1px solid ${T.border}`,
                   background: T.bgHover,
                 }}>
-                  <span style={{ fontSize: 24, marginBottom: 4 }}>ðŸ“„</span>
+                  <span style={{ fontSize: 24, marginBottom: 4 }}></span>
                   <span style={{ fontSize: 10, color: T.red, fontWeight: 700, letterSpacing: "0.05em" }}>{f.fileType}</span>
                 </div>
               )}
@@ -470,7 +441,7 @@ function ProjectFilesUpload({ files, onChange }) {
                 transition: "background 0.15s",
               }}
               onMouseEnter={e => e.currentTarget.style.background = T.red}
-              onMouseLeave={e => e.currentTarget.style.background = "rgba(0,0,0,0.7)"}>Ã—</button>
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(0,0,0,0.7)"}>x</button>
               {/* Caption */}
               <div style={{ padding: "6px 8px" }}>
                 <p style={{ fontSize: 10, color: T.textDim, marginBottom: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</p>
@@ -508,11 +479,11 @@ function ProjectFilesUpload({ files, onChange }) {
           onMouseEnter={e => { e.currentTarget.style.borderColor = T.red + "66"; e.currentTarget.style.background = T.bgHover; }}
           onMouseLeave={e => { if (!dragging) { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = T.bgInput; } }}
         >
-          <span style={{ fontSize: 24 }}>ðŸ“</span>
+          <span style={{ fontSize: 24 }}></span>
           <span style={{ fontSize: 13, fontWeight: 500, color: T.textMuted }}>
             {files.length === 0 ? "Upload screenshots, mockups, or files" : "Add more files"}
           </span>
-          <span style={{ fontSize: 11, color: T.textDim }}>Click or drag Â· Images & docs Â· {6 - files.length} remaining</span>
+          <span style={{ fontSize: 11, color: T.textDim }}>Click or drag - Images & docs - {6 - files.length} remaining</span>
         </div>
       )}
       <input ref={fileRef} type="file" accept="image/*,.pdf,.doc,.docx,.pptx,.txt" multiple style={{ display: "none" }}
@@ -551,182 +522,6 @@ const HELP_METHODS = [
   "Project reviews","Workshops","Introductions / networking",
 ];
 
-// --- Onboarding Flow ---
-function Onboarding({ role, onComplete }) {
-  const isMember = role === "member";
-  const totalSteps = isMember ? 4 : 3;
-  const [step, setStep] = useState(0);
-  const [data, setData] = useState(
-    isMember
-      ? { photo:"",name:"",experience:"",skills:[],interests:[],highlights:"",stage:"",needsHelp:"",projectName:"",projectDesc:"",projectStatus:"",projectFiles:[],projectUrl:"",linkedin:"",phone:"" }
-      : { photo:"",name:"",skills:[],focusArea:"",experience:"",helpMethods:[],contactInfo:"",howToHelp:"",phone:"" }
-  );
-
-  const up = (field, val) => setData(prev => ({ ...prev, [field]: val }));
-  const next = () => step < totalSteps - 1 ? setStep(step + 1) : finish();
-  const back = () => step > 0 && setStep(step - 1);
-
-  const [finishing, setFinishing] = useState(false);
-  const [finishError, setFinishError] = useState("");
-
-  const finish = async () => {
-    setFinishing(true);
-    setFinishError("");
-    try {
-      const profile = await db.createProfile({ role, ...data });
-      onComplete(profile);
-    } catch (e) {
-      console.error("Finish onboarding error:", e);
-      setFinishError(e.message || "Something went wrong. Try again.");
-      setFinishing(false);
-    }
-  };
-
-  const canProceed = () => {
-    if (step === 0) return data.name.trim().length >= 2;
-    return true;
-  };
-
-  const memberSteps = [
-    {
-      title: "Let's get you set up", subtitle: "This takes about 60 seconds. No pressure.", emoji: "ðŸ‘‹",
-      content: (<>
-        <PhotoUpload photo={data.photo} onUpload={v => up("photo", v)} />
-        <Input label="Your name" placeholder="What should people call you?" value={data.name} onChange={v => up("name", v)} />
-        <Input label="Brief experience" placeholder="e.g. CS sophomore, built 2 side projects" value={data.experience} onChange={v => up("experience", v)} optional />
-      </>),
-    },
-    {
-      title: "What do you bring to the table?", subtitle: "These help other members find you.", emoji: "âš¡",
-      content: (<>
-        <TagInput label="Skills" tags={data.skills} onChange={v => up("skills", v)} placeholder="Type a skill..." suggestions={SKILL_SUGGESTIONS} />
-        <TagInput label="Interests" tags={data.interests} onChange={v => up("interests", v)} placeholder="What excites you?" suggestions={INTEREST_SUGGESTIONS} />
-      </>),
-    },
-    {
-      title: "Where are you at right now?", subtitle: "Helps mentors understand how to help you.", emoji: "ðŸš€",
-      content: (<>
-        <SelectInput label="What stage are you in?" value={data.stage} onChange={v => up("stage", v)} options={STAGE_OPTIONS} />
-        <Input label="What do you need help with?" textarea placeholder="e.g. Need a co-founder, looking for feedback on my landing page..." value={data.needsHelp} onChange={v => up("needsHelp", v)} />
-      </>),
-    },
-    {
- title: "Show off a little", subtitle: "Totally optional â€” fill in what you want.", emoji: "âœ¨",
-      content: (<>
-        <div style={{ padding:16, borderRadius:12, background:T.bgHover, border:`1px solid ${T.border}`, marginBottom:16 }}>
-          <p style={{ fontSize:13, fontWeight:600, color:T.textMuted, marginBottom:12 }}>Project Spotlight</p>
-          <Input label="Project name" placeholder="What are you building?" value={data.projectName} onChange={v => up("projectName", v)} optional />
-          <Input label="Quick description" placeholder="One sentence about what it does" value={data.projectDesc} onChange={v => up("projectDesc", v)} optional />
-          <SelectInput label="Project status" value={data.projectStatus} onChange={v => up("projectStatus", v)} options={["Idea stage","Building MVP","Live / Launched","Growing"]} />
-          <Input label="Project URL" placeholder="https://yourproject.com" value={data.projectUrl||""} onChange={v => up("projectUrl", v)} optional />
-          <ProjectFilesUpload files={data.projectFiles||[]} onChange={v => up("projectFiles", v)} />
-        </div>
-        <Input label="Highlights" textarea placeholder="Awards, achievements, cool stuff..." value={data.highlights} onChange={v => up("highlights", v)} optional />
-        <Input label="LinkedIn profile URL" placeholder="https://linkedin.com/in/yourname" value={data.linkedin} onChange={v => up("linkedin", v)} optional />
-        <Input label="Phone number" placeholder="(555) 123-4567" value={data.phone} onChange={v => up("phone", v)} optional />
-      </>),
-    },
-  ];
-
-  const mentorSteps = [
-    {
-      title: "Welcome, mentor!", subtitle: "Let's set up your profile so members can find you.", emoji: "ðŸŒŸ",
-      content: (<>
-        <PhotoUpload photo={data.photo} onUpload={v => up("photo", v)} />
-        <Input label="Your name" placeholder="Full name" value={data.name} onChange={v => up("name", v)} />
-        <Input label="Experience / Credentials" textarea placeholder="e.g. 10 years in product, founded 2 startups..." value={data.experience} onChange={v => up("experience", v)} />
-      </>),
-    },
-    {
-      title: "Your expertise", subtitle: "Help members find the right mentor.", emoji: "ðŸŽ¯",
-      content: (<>
-        <TagInput label="Skills & Expertise" tags={data.skills} onChange={v => up("skills", v)} placeholder="What are you great at?" suggestions={SKILL_SUGGESTIONS} />
-        <SelectInput label="Primary area of focus" value={data.focusArea} onChange={v => up("focusArea", v)} options={FOCUS_AREAS} />
-      </>),
-    },
-    {
-      title: "How you want to help", subtitle: "Set expectations so members reach out the right way.", emoji: "ðŸ¤",
-      content: (<>
-        <Input label="How do you want to help?" textarea placeholder="e.g. I can review pitch decks, advise on go-to-market..." value={data.howToHelp} onChange={v => up("howToHelp", v)} />
-        <div style={{ marginBottom:16 }}>
-          <label style={{ display:"block", fontSize:13, fontWeight:600, color:T.textMuted, marginBottom:8 }}>Preferred methods</label>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
-            {HELP_METHODS.map(m => {
-              const sel = data.helpMethods?.includes(m);
-              return (
-                <button key={m} onClick={() => up("helpMethods", sel ? data.helpMethods.filter(x=>x!==m) : [...(data.helpMethods||[]),m])}
-                  style={{
-                    padding:"7px 14px", borderRadius:8, fontSize:13, fontFamily:"Inter",
-                    border:`1.5px solid ${sel?T.red:T.border}`, background:sel?T.redSoft:"transparent",
-                    color:sel?T.red:T.textMuted, cursor:"pointer", transition:"all 0.15s", fontWeight:sel?600:400,
-                  }}>{m}</button>
-              );
-            })}
-          </div>
-        </div>
-        <Input label="Best way to reach you" placeholder="e.g. email@example.com, Slack, etc." value={data.contactInfo} onChange={v => up("contactInfo", v)} />
-        <Input label="Phone number" placeholder="(555) 123-4567" value={data.phone} onChange={v => up("phone", v)} optional />
-      </>),
-    },
-  ];
-
-  const steps = isMember ? memberSteps : mentorSteps;
-  const current = steps[step];
-  const progress = ((step + 1) / totalSteps) * 100;
-
-  return (
-    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:24, position:"relative", overflow:"hidden" }}>
-      <ArrowDecor style={{ top:-100, right:-120, transform:"rotate(12deg)" }} />
-      <div style={{ width:"100%", maxWidth:520, animation:"fadeUp 0.4s ease" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:32 }}>
-          <div style={{ flex:1, height:4, borderRadius:4, background:T.border, overflow:"hidden" }}>
-            <div style={{ height:"100%", borderRadius:4, background:T.red, width:`${progress}%`, transition:"width 0.4s ease" }} />
-          </div>
-          <span style={{ fontSize:12, color:T.textDim, fontWeight:600, whiteSpace:"nowrap" }}>{step+1} / {totalSteps}</span>
-        </div>
-        <div key={step} style={{ background:T.bgCard, borderRadius:20, padding:"36px 32px", border:`1px solid ${T.border}`, animation:"fadeUp 0.35s ease" }}>
-          <div style={{ fontSize:36, marginBottom:12 }}>{current.emoji}</div>
-          <h2 style={{ fontFamily:"DM Serif Display, serif", fontSize:26, fontWeight:400, letterSpacing:"-0.01em", marginBottom:6 }}>{current.title}</h2>
-          <p style={{ color:T.textMuted, fontSize:14, marginBottom:28, lineHeight:1.5 }}>{current.subtitle}</p>
-          {current.content}
-          <div style={{ display:"flex", justifyContent:"space-between", marginTop:24 }}>
-            {step > 0 ? (
-              <button onClick={back} style={{
-                padding:"10px 20px", borderRadius:10, fontSize:14, fontFamily:"Inter", fontWeight:500,
-                background:"transparent", border:`1.5px solid ${T.border}`, color:T.textMuted, cursor:"pointer",
-              }}
-              onMouseEnter={e => e.currentTarget.style.borderColor=T.textDim}
-              onMouseLeave={e => e.currentTarget.style.borderColor=T.border}>â† Back</button>
-            ) : <div />}
-            <button onClick={next} disabled={!canProceed()||finishing} style={{
-              padding:"10px 28px", borderRadius:10, fontSize:14, fontFamily:"Inter", fontWeight:700,
-              background:(canProceed()&&!finishing)?T.red:T.border, color:(canProceed()&&!finishing)?T.white:T.textDim,
-              border:"none", cursor:(canProceed()&&!finishing)?"pointer":"default",
-              boxShadow:(canProceed()&&!finishing)?`0 0 20px ${T.redGlow}`:"none", transition:"all 0.2s ease",
-              opacity:finishing?0.7:1,
-            }}
-            onMouseEnter={e => { if(canProceed()&&!finishing) e.currentTarget.style.transform="scale(1.03)"; }}
-            onMouseLeave={e => e.currentTarget.style.transform="scale(1)"}
- >{finishing?"Creating...":(step===totalSteps-1?"Launch Profile ":"Continue â†’")}</button>
-          </div>
-          {finishError && (
-            <div style={{
-              marginTop:14, padding:"10px 14px", borderRadius:10, fontSize:13,
-              background:T.red+"12", color:T.red, border:`1px solid ${T.red}22`,
-              animation:"scaleIn 0.2s ease", textAlign:"center",
-            }}>{finishError}</div>
-          )}
-        </div>
-        <div style={{ display:"flex", justifyContent:"center", gap:8, marginTop:20 }}>
-          {Array.from({length:totalSteps}).map((_,i) => (
-            <div key={i} style={{ width:i===step?24:8, height:8, borderRadius:4, background:i<=step?T.red:T.border, transition:"all 0.3s ease" }} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 
 
 // --- Featured Members for Landing ---
@@ -763,7 +558,6 @@ function LandingPage({ onSuccess }) {
   const [successRole, setSuccessRole] = useState(null);
   const [activeMember, setActiveMember] = useState(0);
   const [hoveredMember, setHoveredMember] = useState(null);
-  const [hoveredSpec, setHoveredSpec] = useState(null);
   const [ctaHovered, setCtaHovered] = useState(false);
   const inputsRef = useRef([]);
   const triedRef = useRef(false);
@@ -1047,7 +841,7 @@ function LandingPage({ onSuccess }) {
                     textTransform: "uppercase",
                     color: LANDING_ACCENT,
                     animation: "fadeIn 0.15s ease",
-                  }}>Wrong code {"\u2014"} try again</p>
+                  }}>Wrong code - try again</p>
                 )}
 
                 {/* Hint */}
@@ -1059,7 +853,7 @@ function LandingPage({ onSuccess }) {
                     letterSpacing: "0.05em",
                     opacity: 0,
                     animation: "textReveal 0.4s ease 0.6s forwards",
-                  }}>6-digit code required {"\u00B7"} press Esc to cancel</p>
+                  }}>6-digit code required - press Esc to cancel</p>
                 )}
               </div>
             )}
@@ -1259,13 +1053,12 @@ function LandingPage({ onSuccess }) {
 
 // --- Sidebar ---
 const NAV_ITEMS = [
-  { id:"dashboard", label:"Dashboard", icon:"â—‰" },
-  { id:"members", label:"Members", icon:"â—‹" },
-  { id:"mentors", label:"Mentors", icon:"â˜…" },
-  { id:"resources", label:"Resources", icon:"â—ˆ" },
-  { id:"myprofile", label:"My Profile", icon:"â—‰" },
+  { id:"dashboard", label:"Dashboard", icon:"" },
+  { id:"members", label:"Members", icon:"" },
+  { id:"resources", label:"Resources", icon:"" },
+  { id:"myprofile", label:"My Profile", icon:"" },
 ];
-const ADMIN_NAV = [{ id:"admin", label:"Admin Panel", icon:"âš™" }];
+const ADMIN_NAV = [{ id:"admin", label:"Admin Panel", icon:"" }];
 
 function Sidebar({ active, onNav, role, onLogout, profileName, hasProfile }) {
   const base = hasProfile ? NAV_ITEMS : NAV_ITEMS.filter(i => i.id !== "myprofile");
@@ -1314,7 +1107,7 @@ function Sidebar({ active, onNav, role, onLogout, profileName, hasProfile }) {
               }}
             >
               {item.label}
-              {/* Active indicator â€” bottom line */}
+              {/* Active indicator - bottom line */}
               {isActive && (
                 <div style={{
                   position:"absolute", bottom:0, left:12, right:12,
@@ -1328,7 +1121,7 @@ function Sidebar({ active, onNav, role, onLogout, profileName, hasProfile }) {
         })}
       </nav>
 
-      {/* Right side â€” user + exit */}
+      {/* Right side - user + exit */}
       <div style={{ display:"flex", alignItems:"center", gap:14, flexShrink:0 }}>
         <span style={{ fontSize:12, color:T.textMuted, fontFamily:"Inter", fontWeight:500 }}>
           {profileName || <span style={{ color:T.red, fontWeight:600, textTransform:"capitalize" }}>{role}</span>}
@@ -1415,7 +1208,7 @@ function MyProfilePage({ profile, onEdit }) {
                 }}
                 onMouseEnter={e => e.currentTarget.style.background=T.red+"30"}
                 onMouseLeave={e => e.currentTarget.style.background=T.redSoft}>
-                  ðŸ”— Visit Project
+                   Visit Project
                 </button>
               )}
               {profile.projectFiles?.length > 0 && (
@@ -1426,7 +1219,7 @@ function MyProfilePage({ profile, onEdit }) {
                         <div style={{ width:"100%", height:90, background:`url(${f.data}) center/cover` }} />
                       ) : (
                         <div style={{ width:"100%", height:90, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:T.bg }}>
-                          <span style={{ fontSize:20 }}>ðŸ“„</span>
+                          <span style={{ fontSize:20 }}></span>
                           <span style={{ fontSize:9, color:T.red, fontWeight:700, marginTop:2 }}>{f.fileType}</span>
                         </div>
                       )}
@@ -1569,7 +1362,7 @@ function ProfileModal({ profile, onClose }) {
           fontSize:16, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
         }}
         onMouseEnter={e => { e.currentTarget.style.background=T.red; e.currentTarget.style.color=T.white; }}
-        onMouseLeave={e => { e.currentTarget.style.background=T.bgHover; e.currentTarget.style.color=T.textMuted; }}>Ã—</button>
+        onMouseLeave={e => { e.currentTarget.style.background=T.bgHover; e.currentTarget.style.color=T.textMuted; }}>x</button>
 
         <div style={{ display:"flex", gap:20, alignItems:"center", marginBottom:24 }}>
           <Avatar photo={profile.photo} name={profile.name} size={80} />
@@ -1597,7 +1390,7 @@ function ProfileModal({ profile, onClose }) {
                   <button onClick={() => window.open(profile.projectUrl,"_blank")} style={{
                     display:"inline-flex", alignItems:"center", gap:4, padding:"3px 12px", borderRadius:6, fontSize:11, fontWeight:600,
                     fontFamily:"Inter", background:T.redSoft, color:T.red, border:`1px solid ${T.red}22`, cursor:"pointer",
-                 }}>ðŸ”— Visit</button>
+                 }}> Visit</button>
                 )}
               </div>
               {profile.projectFiles?.length > 0 && (
@@ -1605,7 +1398,7 @@ function ProfileModal({ profile, onClose }) {
                   {profile.projectFiles.map((f,i) => (
                     <div key={i} style={{ borderRadius:8, overflow:"hidden", border:`1px solid ${T.border}` }}>
                       {f.type==="image" ? <div style={{ width:"100%", height:80, background:`url(${f.data}) center/cover` }} />
-                        : <div style={{ width:"100%", height:80, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:T.bg }}><span style={{ fontSize:18 }}>ðŸ“„</span><span style={{ fontSize:9, color:T.red, fontWeight:700 }}>{f.fileType}</span></div>}
+                        : <div style={{ width:"100%", height:80, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background:T.bg }}><span style={{ fontSize:18 }}></span><span style={{ fontSize:9, color:T.red, fontWeight:700 }}>{f.fileType}</span></div>}
                       {f.caption && <p style={{ fontSize:9, color:T.textMuted, padding:"3px 5px" }}>{f.caption}</p>}
                     </div>
                   ))}
@@ -1647,12 +1440,12 @@ function SearchBar({ value, onChange, placeholder, filterTags, activeFilters, on
         display:"flex", alignItems:"center", gap:10, padding:"10px 16px", borderRadius:12,
         background:T.bgInput, border:`1.5px solid ${focused ? T.red+"88" : T.border}`, transition:"border-color 0.2s",
       }}>
-        <span style={{ color:T.textDim, fontSize:16 }}>ðŸ”</span>
+        <span style={{ color:T.textDim, fontSize:16 }}></span>
         <input value={value} onChange={e => onChange(e.target.value)}
           onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
           placeholder={placeholder}
           style={{ flex:1, background:"none", border:"none", color:T.text, fontSize:14, fontFamily:"Inter", outline:"none" }} />
-        {value && <span onClick={() => onChange("")} style={{ color:T.textDim, cursor:"pointer", fontSize:14 }}>âœ•</span>}
+        {value && <span onClick={() => onChange("")} style={{ color:T.textDim, cursor:"pointer", fontSize:14 }}>x</span>}
       </div>
       {filterTags?.length > 0 && (
         <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:10 }}>
@@ -1773,7 +1566,7 @@ function DashboardPage({ role, onNav }) {
   return (
     <div style={{ flex:1, padding:"48px 52px", overflowY:"auto", maxWidth:900, animation:"fadeUp 0.4s ease" }}>
 
-      {/* Header â€” greeting left, stats right */}
+      {/* Header - greeting left, stats right */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:56, gap:40 }}>
         <div>
           <h1 style={{
@@ -1822,14 +1615,14 @@ function DashboardPage({ role, onNav }) {
             </h2>
             <p style={{ fontSize:13, color:T.textDim, marginBottom:8 }}>
               by <span style={{ fontWeight:600, color:T.textMuted }}>{featured.name}</span>
-              {featured.projectStatus && <span style={{ fontStyle:"italic" }}>{" \u2014 "}{featured.projectStatus}</span>}
+              {featured.projectStatus && <span style={{ fontStyle:"italic" }}>{" - "}{featured.projectStatus}</span>}
             </p>
             {featured.projectDesc && (
               <p style={{ fontSize:14, color:T.textMuted, lineHeight:1.7, maxWidth:560 }}>{featured.projectDesc}</p>
             )}
             {featured.skills?.length > 0 && (
               <p style={{ fontSize:12, color:T.textDim, marginTop:12 }}>
-                {featured.skills.slice(0,5).join(" \u00B7 ")}
+                {featured.skills.slice(0,5).join(" - ")}
               </p>
             )}
             {featured.projectFiles?.length > 0 && (
@@ -1986,13 +1779,13 @@ function BrowsePage({ filterRole, title, subtitle }) {
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
         <p style={{ fontSize:13, color:T.textDim }}>
           {filtered.length} {filterRole}{filtered.length !== 1 ? "s" : ""} found
-          {activeFilters.length > 0 && ` Â· ${activeFilters.length} filter${activeFilters.length>1?"s":""} active`}
+          {activeFilters.length > 0 && ` - ${activeFilters.length} filter${activeFilters.length>1?"s":""} active`}
         </p>
       </div>
 
       {filtered.length === 0 ? (
         <div style={{ padding:40, borderRadius:14, background:T.bgCard, border:`1px solid ${T.border}`, textAlign:"center" }}>
-          <p style={{ fontSize:28, marginBottom:8 }}>{filterRole==="member"?"ðŸ‘¥":"ðŸŒŸ"}</p>
+          <p style={{ fontSize:28, marginBottom:8 }}>{filterRole==="member"?"":""}</p>
           <p style={{ color:T.textDim, fontSize:14 }}>
             {profiles.length === 0 ? `No ${filterRole}s have joined yet.` : "No results match your search."}
           </p>
@@ -2017,7 +1810,6 @@ function BrowsePage({ filterRole, title, subtitle }) {
 }
 
 function MembersPage() { return <BrowsePage filterRole="member" title="Members" subtitle="Browse and find fellow builders" />; }
-function MentorsPage() { return <BrowsePage filterRole="mentor" title="Mentors" subtitle="Find guidance from experienced mentors" />; }
 // --- Resources Page ---
 function ResourcesPage() {
   const [activeTab, setActiveTab] = useState("validator");
@@ -2081,10 +1873,10 @@ function IdeaValidator() {
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
           max_tokens: 2048,
-          system: "You are a startup analyst. You always respond with ONLY raw JSON arrays. No markdown, no backticks, no explanation â€” just the JSON array.",
+          system: "You are a startup analyst. You always respond with ONLY raw JSON arrays. No markdown, no backticks, no explanation - just the JSON array.",
           messages: [{
             role: "user",
-            content: `Analyze this startup idea. Produce exactly 6 JSON objects in an array. Be specific â€” use real numbers, real company names, real costs where possible. Max 4 points per slide, each point 1-2 sentences.
+            content: `Analyze this startup idea. Produce exactly 6 JSON objects in an array. Be specific - use real numbers, real company names, real costs where possible. Max 4 points per slide, each point 1-2 sentences.
 
 PROBLEM: ${problem}
 SOLUTION: ${solution}
@@ -2110,7 +1902,7 @@ Return ONLY a JSON array in this exact format:
       const data = await response.json();
       const text = data.content?.filter(i => i.type === "text").map(i => i.text).join("") || "";
       
-      // Robust JSON extraction â€” find the outermost [ ... ]
+      // Robust JSON extraction - find the outermost [ ... ]
       const start = text.indexOf("[");
       const end = text.lastIndexOf("]");
       if (start === -1 || end === -1 || end <= start) {
@@ -2337,7 +2129,7 @@ function SkillsToLearn() {
         },
         {
           title: "Add a waitlist form",
-          detail: "One email input, one submit button. Use Formspree.io or Google Forms as the backend â€” both are free and take 2 minutes to set up. Every email you collect is a signal that your idea resonates. This is your first metric."
+          detail: "One email input, one submit button. Use Formspree.io or Google Forms as the backend - both are free and take 2 minutes to set up. Every email you collect is a signal that your idea resonates. This is your first metric."
         },
         {
           title: "Add social proof or urgency",
@@ -2345,12 +2137,12 @@ function SkillsToLearn() {
         },
         {
           title: "Deploy in 60 seconds",
-          detail: "Push your files to a GitHub repo. Go to vercel.com, import the repo, and click Deploy. You now have a live URL with automatic HTTPS. Share it everywhere â€” in DMs, group chats, Twitter, Reddit. The point isn't perfection, it's getting real feedback from real people."
+          detail: "Push your files to a GitHub repo. Go to vercel.com, import the repo, and click Deploy. You now have a live URL with automatic HTTPS. Share it everywhere - in DMs, group chats, Twitter, Reddit. The point isn't perfection, it's getting real feedback from real people."
         },
       ],
       resources: [
-        { label: "Vercel â€” free hosting, deploy from GitHub", url: "https://vercel.com" },
-        { label: "Formspree â€” free form backend", url: "https://formspree.io" },
+        { label: "Vercel - free hosting, deploy from GitHub", url: "https://vercel.com" },
+        { label: "Formspree - free form backend", url: "https://formspree.io" },
         { label: "YC: How to build a great landing page", url: "https://www.youtube.com/watch?v=_lEkD8IGkwo" },
       ],
     },
@@ -2358,15 +2150,15 @@ function SkillsToLearn() {
       id: "mvp-vibe",
       title: "Ship an MVP Through Vibe Coding",
       time: "One weekend",
-      why: "Vibe coding means describing what you want in plain English and letting AI write the code. You don't need to be a developer. Tools like Cursor, Replit Agent, and Claude let you go from idea to working prototype in hours, not weeks. The goal isn't production-grade code â€” it's a working thing you can put in front of users.",
+      why: "Vibe coding means describing what you want in plain English and letting AI write the code. You don't need to be a developer. Tools like Cursor, Replit Agent, and Claude let you go from idea to working prototype in hours, not weeks. The goal isn't production-grade code - it's a working thing you can put in front of users.",
       steps: [
         {
           title: "Define one core action",
-          detail: "Your MVP does ONE thing. Write it as a sentence: 'A user can [action] so that [result].' Everything else â€” settings, profiles, dashboards, onboarding â€” is version 2. The tighter your scope, the faster you ship. If your MVP has more than 3 screens, you're overbuilding."
+          detail: "Your MVP does ONE thing. Write it as a sentence: 'A user can [action] so that [result].' Everything else - settings, profiles, dashboards, onboarding - is version 2. The tighter your scope, the faster you ship. If your MVP has more than 3 screens, you're overbuilding."
         },
         {
           title: "Pick your AI coding tool",
-          detail: "Cursor (cursor.com) is the best if you have some coding familiarity â€” it's VS Code with AI built in. Replit Agent works entirely in the browser and can scaffold full apps from a description. For pure no-code, Bolt.new generates and deploys full-stack apps from a prompt. All have free tiers."
+          detail: "Cursor (cursor.com) is the best if you have some coding familiarity - it's VS Code with AI built in. Replit Agent works entirely in the browser and can scaffold full apps from a description. For pure no-code, Bolt.new generates and deploys full-stack apps from a prompt. All have free tiers."
         },
         {
           title: "Write a detailed spec as your prompt",
@@ -2378,17 +2170,17 @@ function SkillsToLearn() {
         },
         {
           title: "Add auth and a database",
-          detail: "Supabase gives you a Postgres database + auth + API for free. Set up email/password auth and one or two tables. This is the minimum for a real app â€” users can sign up, do the core action, and their data persists. Supabase's docs are AI-friendly, so you can paste them into your coding tool for context."
+          detail: "Supabase gives you a Postgres database + auth + API for free. Set up email/password auth and one or two tables. This is the minimum for a real app - users can sign up, do the core action, and their data persists. Supabase's docs are AI-friendly, so you can paste them into your coding tool for context."
         },
         {
           title: "Deploy and share the link",
-          detail: "Deploy to Vercel (for Next.js) or use Replit's built-in hosting. Your MVP is now live. Send the link to 10 people who match your target user. Watch them use it â€” where do they get confused? What do they try to do that doesn't work? Those observations are worth more than any amount of planning."
+          detail: "Deploy to Vercel (for Next.js) or use Replit's built-in hosting. Your MVP is now live. Send the link to 10 people who match your target user. Watch them use it - where do they get confused? What do they try to do that doesn't work? Those observations are worth more than any amount of planning."
         },
       ],
       resources: [
-        { label: "Cursor â€” AI-first code editor", url: "https://cursor.com" },
-        { label: "Bolt.new â€” prompt to deployed app", url: "https://bolt.new" },
-        { label: "Supabase â€” free backend + auth + database", url: "https://supabase.com" },
+        { label: "Cursor - AI-first code editor", url: "https://cursor.com" },
+        { label: "Bolt.new - prompt to deployed app", url: "https://bolt.new" },
+        { label: "Supabase - free backend + auth + database", url: "https://supabase.com" },
         { label: "YC: How to build your MVP", url: "https://www.youtube.com/watch?v=QRZ_l7cVzzU" },
       ],
     },
@@ -2400,7 +2192,7 @@ function SkillsToLearn() {
       steps: [
         {
           title: "Write down your riskiest assumption",
-          detail: "Every idea has a core bet. 'Freelancers hate invoicing enough to pay $20/month for a tool.' That's your riskiest assumption. Your interviews should attack this directly. If this assumption is wrong, the whole idea falls apart â€” so validate it first, not the easy stuff."
+          detail: "Every idea has a core bet. 'Freelancers hate invoicing enough to pay $20/month for a tool.' That's your riskiest assumption. Your interviews should attack this directly. If this assumption is wrong, the whole idea falls apart - so validate it first, not the easy stuff."
         },
         {
           title: "Find 5 people to interview",
@@ -2412,7 +2204,7 @@ function SkillsToLearn() {
         },
         {
           title: "Master the follow-up question",
-          detail: "When someone says something interesting, don't move to the next question. Go deeper. 'Why was that frustrating?' 'What did you do next?' 'How much time did that take?' 'Have you tried to solve it?' The best insights come from the third or fourth follow-up, not the initial answer. Silence is also a tool â€” pause and let them fill it."
+          detail: "When someone says something interesting, don't move to the next question. Go deeper. 'Why was that frustrating?' 'What did you do next?' 'How much time did that take?' 'Have you tried to solve it?' The best insights come from the third or fourth follow-up, not the initial answer. Silence is also a tool - pause and let them fill it."
         },
         {
           title: "Write down exact quotes",
@@ -2424,7 +2216,7 @@ function SkillsToLearn() {
         },
       ],
       resources: [
-        { label: "The Mom Test â€” the essential book on customer interviews", url: "https://www.momtestbook.com" },
+        { label: "The Mom Test - the essential book on customer interviews", url: "https://www.momtestbook.com" },
         { label: "YC: How to talk to users", url: "https://www.youtube.com/watch?v=MT4Ig2uqjTc" },
         { label: "Lenny Rachitsky: questions to ask in user interviews", url: "https://www.lennysnewsletter.com/p/my-favorite-user-interview-questions" },
       ],
@@ -2432,40 +2224,40 @@ function SkillsToLearn() {
     {
       id: "vibe-coding",
       title: "Vibe Coding",
-      time: "2–3 hours",
+      time: "2-3 hours",
       why: "Vibe coding is the art of building software by describing what you want in natural language and letting AI write the code. You don't need a CS degree or years of programming experience. If you can clearly describe a problem and iterate on feedback, you can build real software. This skill turns non-technical founders into builders.",
       steps: [
         {
           title: "Understand the mindset",
-          detail: "Vibe coding isn't about learning syntax — it's about learning to communicate with AI precisely. Think of yourself as a creative director, not a developer. You describe the vision, the AI writes the code, and you evaluate the output. Your job is taste, direction, and knowing when something looks right. The better you get at describing what you want, the faster you build."
+          detail: "Vibe coding isn't about learning syntax - it's about learning to communicate with AI precisely. Think of yourself as a creative director, not a developer. You describe the vision, the AI writes the code, and you evaluate the output. Your job is taste, direction, and knowing when something looks right. The better you get at describing what you want, the faster you build."
         },
         {
           title: "Choose your environment",
-          detail: "Start with one tool and stick with it. Claude is great for generating components and logic from conversation. Cursor gives you a full IDE with AI built in — perfect if you want to see and tweak the code. Replit Agent and Bolt.new let you go from prompt to deployed app without ever touching a terminal. Lovable and v0 are solid for UI-heavy projects. Pick based on your comfort level."
+          detail: "Start with one tool and stick with it. Claude is great for generating components and logic from conversation. Cursor gives you a full IDE with AI built in - perfect if you want to see and tweak the code. Replit Agent and Bolt.new let you go from prompt to deployed app without ever touching a terminal. Lovable and v0 are solid for UI-heavy projects. Pick based on your comfort level."
         },
         {
           title: "Write prompts like a product spec",
-          detail: "The #1 mistake is being too vague. 'Build me a dashboard' gives you garbage. Instead, write: 'Build a dashboard with a sidebar nav on the left (Home, Projects, Settings). The main area shows a grid of project cards — each card has a title, status badge (active/paused/completed), and a last-updated date. Use a clean, minimal design with a white background and subtle gray borders.' Specificity is your superpower."
+          detail: "The #1 mistake is being too vague. 'Build me a dashboard' gives you garbage. Instead, write: 'Build a dashboard with a sidebar nav on the left (Home, Projects, Settings). The main area shows a grid of project cards - each card has a title, status badge (active/paused/completed), and a last-updated date. Use a clean, minimal design with a white background and subtle gray borders.' Specificity is your superpower."
         },
         {
           title: "Iterate in small loops",
-          detail: "Don't try to build everything in one prompt. Start with the skeleton — layout and navigation. Then add one feature at a time. Test it, see what breaks, paste the error back in. Each loop should take 5–15 minutes. This rhythm — prompt, review, adjust — is the core of vibe coding. You'll build intuition for what the AI handles well and where you need to guide it."
+          detail: "Don't try to build everything in one prompt. Start with the skeleton - layout and navigation. Then add one feature at a time. Test it, see what breaks, paste the error back in. Each loop should take 5-15 minutes. This rhythm - prompt, review, adjust - is the core of vibe coding. You'll build intuition for what the AI handles well and where you need to guide it."
         },
         {
           title: "Learn to debug by describing",
-          detail: "When something breaks (and it will), don't panic. Copy the error message and paste it back to the AI with context: 'I'm getting this error when I click the submit button. Here's my current code.' The AI will usually spot the issue immediately. Over time, you'll start recognizing common patterns — missing imports, wrong variable names, async issues — and fix them faster."
+          detail: "When something breaks (and it will), don't panic. Copy the error message and paste it back to the AI with context: 'I'm getting this error when I click the submit button. Here's my current code.' The AI will usually spot the issue immediately. Over time, you'll start recognizing common patterns - missing imports, wrong variable names, async issues - and fix them faster."
         },
         {
           title: "Build your prompt library",
-          detail: "Save prompts that work well. 'Add a responsive nav bar with mobile hamburger menu,' 'Create a Supabase auth flow with email/password,' 'Build a settings page with a form that saves to the database' — these become reusable building blocks. The best vibe coders have a personal library of battle-tested prompts they remix for every project."
+          detail: "Save prompts that work well. 'Add a responsive nav bar with mobile hamburger menu,' 'Create a Supabase auth flow with email/password,' 'Build a settings page with a form that saves to the database' - these become reusable building blocks. The best vibe coders have a personal library of battle-tested prompts they remix for every project."
         },
       ],
       resources: [
-        { label: "Cursor — AI-first code editor", url: "https://cursor.com" },
-        { label: "Claude — build with conversation", url: "https://claude.ai" },
-        { label: "Bolt.new — prompt to deployed app", url: "https://bolt.new" },
-        { label: "Replit — collaborative AI coding in the browser", url: "https://replit.com" },
-        { label: "v0 by Vercel — AI UI generation", url: "https://v0.dev" },
+        { label: "Cursor - AI-first code editor", url: "https://cursor.com" },
+        { label: "Claude - build with conversation", url: "https://claude.ai" },
+        { label: "Bolt.new - prompt to deployed app", url: "https://bolt.new" },
+        { label: "Replit - collaborative AI coding in the browser", url: "https://replit.com" },
+        { label: "v0 by Vercel - AI UI generation", url: "https://v0.dev" },
       ],
     },
   ];
@@ -2548,7 +2340,7 @@ function SkillsToLearn() {
                               cursor: "pointer", transition: "all 0.2s ease",
                               color: T.success, fontSize: 11, fontWeight: 700,
                             }}>
-                              {isDone && "\u2713"}
+                              {isDone && "x"}
                             </div>
                             <div style={{ flex: 1 }}>
                               <p style={{
@@ -2612,10 +2404,10 @@ function PitchDeckResources() {
     {
       id: "cover",
       title: "Cover Slide",
-      purpose: "First impression â€” you get 3 seconds",
+      purpose: "First impression - you get 3 seconds",
       tips: [
         "Your cover should do one thing: make someone lean in. Company name, a one-line description of what you do, and nothing else. No mission statements, no team photos, no 'Founded in 2025.' The one-liner should be concrete enough that someone who reads it knows exactly what category you're in.",
-        "White space is a design choice, not wasted space. The more cluttered your cover, the less confident you look. Investors see 20+ decks a week â€” the ones that stand out are the ones that breathe.",
+        "White space is a design choice, not wasted space. The more cluttered your cover, the less confident you look. Investors see 20+ decks a week - the ones that stand out are the ones that breathe.",
         "If you have a compelling stat, lead with it above your company name. '40% of freelancer invoices are paid late' immediately creates tension and curiosity.",
       ],
       mistakes: [
@@ -2623,7 +2415,7 @@ function PitchDeckResources() {
         "Using a busy background image. A dark or white solid background with clean type signals competence.",
         "Including contact info on the cover. That goes on the last slide.",
       ],
-      example: "Acme â€” Invoicing that gets freelancers paid 2x faster. That's the entire slide. Logo top-left, one-liner centered, nothing else. Maybe a stat above it: '$48B in freelancer invoices are paid late every year.'",
+      example: "Acme - Invoicing that gets freelancers paid 2x faster. That's the entire slide. Logo top-left, one-liner centered, nothing else. Maybe a stat above it: '$48B in freelancer invoices are paid late every year.'",
     },
     {
       id: "problem",
@@ -2632,14 +2424,14 @@ function PitchDeckResources() {
       tips: [
         "The strongest problem slides use a real quote from a real person. 'I spent 6 hours last month chasing a $2,000 invoice' hits harder than 'Freelancers struggle with late payments.' Pull directly from your customer interviews.",
         "Quantify the pain. Time wasted, money lost, frequency of the problem. 'The average freelancer spends 8 hours per month on invoicing admin' gives the audience a concrete grasp of severity.",
-        "One problem, explored deeply. Resist the temptation to list 5 problems. If you have to list multiple, your focus is too broad. Investors want to fund solutions to one specific, well-understood pain â€” not a vague bundle of annoyances.",
+        "One problem, explored deeply. Resist the temptation to list 5 problems. If you have to list multiple, your focus is too broad. Investors want to fund solutions to one specific, well-understood pain - not a vague bundle of annoyances.",
       ],
       mistakes: [
         "Describing the problem abstractly. 'Communication is broken' means nothing. 'Remote teams lose 5 hours per week to context-switching between 7 different messaging tools' means something.",
         "Making the problem about you. 'We noticed that...' puts you at the center. Put the customer at the center. 'Freelancers report that...'",
         "Listing problems as bullet points with no narrative. Tell a story. Walk through a day in your customer's life where this problem ruins something.",
       ],
-      example: "'Last Tuesday, I invoiced a client for $3,200. By Friday, nothing. I sent a follow-up. Then another. Two weeks later I got paid â€” minus a 'late processing fee' they made up. This happens every month.' â€” Sarah M., UX Designer. 63% of freelancers report being paid late on at least one invoice per quarter.",
+      example: "'Last Tuesday, I invoiced a client for $3,200. By Friday, nothing. I sent a follow-up. Then another. Two weeks later I got paid - minus a 'late processing fee' they made up. This happens every month.' - Sarah M., UX Designer. 63% of freelancers report being paid late on at least one invoice per quarter.",
     },
     {
       id: "solution",
@@ -2647,7 +2439,7 @@ function PitchDeckResources() {
       purpose: "Show what you built, and connect it directly to the pain",
       tips: [
         "Lead with the outcome, not the feature list. 'Freelancers get paid in 3 days instead of 30' is better than 'We built an automated invoicing platform with smart follow-ups and payment tracking.' The outcome makes someone care; the features explain how after they already care.",
-        "Show a screenshot or short demo. A real product screenshot signals that this thing actually exists. If you're pre-product, show a mockup â€” but make it look real. Never describe software in words alone when you could just show it.",
+        "Show a screenshot or short demo. A real product screenshot signals that this thing actually exists. If you're pre-product, show a mockup - but make it look real. Never describe software in words alone when you could just show it.",
         "Draw an explicit line from the problem slide. If the problem was 'chasing payments takes 8 hours/month,' the solution should be 'Acme reduces that to zero.' The audience should feel the relief.",
       ],
       mistakes: [
@@ -2662,7 +2454,7 @@ function PitchDeckResources() {
       title: "Why Now",
       purpose: "Explain what changed in the world that makes this the right moment",
       tips: [
-        "Every good startup is riding a wave. Something changed recently â€” a new technology, a regulatory shift, a cultural behavior change, a market dislocation â€” that makes your solution possible or necessary in a way it wasn't three years ago. Identify that change and make it the centerpiece of this slide.",
+        "Every good startup is riding a wave. Something changed recently - a new technology, a regulatory shift, a cultural behavior change, a market dislocation - that makes your solution possible or necessary in a way it wasn't three years ago. Identify that change and make it the centerpiece of this slide.",
         "The strongest 'why now' answers are external, not internal. 'Because we finally built it' is not a reason. 'Because GPT-4 made it possible to automate invoice follow-ups at near-zero cost' is a reason. The shift should be something happening in the world, not something happening inside your company.",
         "Stack multiple tailwinds if you have them. A technology shift plus a behavior change plus a regulatory window is a compelling convergence. 'The freelance workforce grew 40% since 2020, payment processing APIs dropped to near-zero cost, and new state laws now penalize late invoice payments.' Each tailwind makes the others more powerful.",
       ],
@@ -2694,16 +2486,16 @@ function PitchDeckResources() {
       title: "Competition",
       purpose: "Show you understand the landscape and where you win",
       tips: [
-        "Never say you have no competition. If you say 'there are no competitors,' an investor hears one of two things: you haven't looked, or the market doesn't exist. There is always competition â€” even if it's spreadsheets, manual processes, or doing nothing. Acknowledge the landscape honestly and explain where you fit.",
+        "Never say you have no competition. If you say 'there are no competitors,' an investor hears one of two things: you haven't looked, or the market doesn't exist. There is always competition - even if it's spreadsheets, manual processes, or doing nothing. Acknowledge the landscape honestly and explain where you fit.",
         "The best competition slides show a 2x2 matrix or a simple positioning chart with two axes that matter to your customer. Pick axes where you naturally win. If your advantage is simplicity, use 'simple vs. complex' as one axis. If it's price, use 'affordable vs. enterprise.' Place competitors on the chart and show the gap you fill.",
         "Focus on your unfair advantage, not on trashing competitors. 'FreshBooks is built for accountants; we're built for solo freelancers who don't know accounting' is a positioning statement. 'FreshBooks sucks' is not. Respect for competitors signals maturity.",
       ],
       mistakes: [
         "The feature checklist with all green checkmarks for you and all red X's for everyone else. Every investor has seen this, and nobody believes it. If you're better at literally everything, something is wrong with your analysis.",
         "Listing 15 competitors. If your market has that many relevant players, you haven't segmented tightly enough. Pick the 3-5 that your target customer is most likely to compare you against.",
-        "Ignoring indirect competition. Your biggest competitor might not be another software tool â€” it might be a spreadsheet, a VA, or the customer just not solving the problem at all. 'Do nothing' is often the hardest competitor to beat.",
+        "Ignoring indirect competition. Your biggest competitor might not be another software tool - it might be a spreadsheet, a VA, or the customer just not solving the problem at all. 'Do nothing' is often the hardest competitor to beat.",
       ],
-      example: "A 2x2 matrix. X-axis: Built for accountants vs. Built for freelancers. Y-axis: Manual setup vs. Fully automated. FreshBooks sits in 'accountants + manual.' Wave sits in 'accountants + automated.' Acme sits alone in 'freelancers + fully automated' â€” the underserved quadrant. Below: 'No tool today serves non-technical freelancers with zero-setup automation. That's our gap.'",
+      example: "A 2x2 matrix. X-axis: Built for accountants vs. Built for freelancers. Y-axis: Manual setup vs. Fully automated. FreshBooks sits in 'accountants + manual.' Wave sits in 'accountants + automated.' Acme sits alone in 'freelancers + fully automated' - the underserved quadrant. Below: 'No tool today serves non-technical freelancers with zero-setup automation. That's our gap.'",
     },
     {
       id: "traction",
@@ -2715,36 +2507,36 @@ function PitchDeckResources() {
         "Retention is the metric that matters most. If people come back, you've built something they need. Show weekly or monthly retention. If 60%+ of users are still active after 4 weeks, that's strong signal at an early stage.",
       ],
       mistakes: [
-        "Showing vanity metrics. Page views, app downloads, social media followers â€” these don't prove product-market fit. Someone downloading your app and never opening it again is not traction.",
+        "Showing vanity metrics. Page views, app downloads, social media followers - these don't prove product-market fit. Someone downloading your app and never opening it again is not traction.",
         "Hiding bad numbers behind good ones. If you have 5,000 signups but only 50 active users, the 5,000 number is misleading. Investors will ask, and it's worse to be caught than to be honest.",
-        "No graph. Traction slides should always have a visual. A line going up and to the right â€” even if the numbers are small â€” communicates momentum faster than any paragraph.",
+        "No graph. Traction slides should always have a visual. A line going up and to the right - even if the numbers are small - communicates momentum faster than any paragraph.",
       ],
-      example: "A simple line chart. X-axis: weeks. Y-axis: active users. Below it: 'Launched 8 weeks ago. 520 active users, 91% weekly retention. $2,100 MRR, growing 28% MoM. Zero paid acquisition â€” all organic and word of mouth.'",
+      example: "A simple line chart. X-axis: weeks. Y-axis: active users. Below it: 'Launched 8 weeks ago. 520 active users, 91% weekly retention. $2,100 MRR, growing 28% MoM. Zero paid acquisition - all organic and word of mouth.'",
     },
     {
       id: "gtm",
       title: "Go-to-Market Strategy",
-      purpose: "Show how you'll actually acquire customers â€” not theoretically, but concretely",
+      purpose: "Show how you'll actually acquire customers - not theoretically, but concretely",
       tips: [
-        "Describe your first channel in detail, not five channels in generalities. 'We'll grow through content marketing, partnerships, social media, paid ads, and referrals' is a list, not a strategy. 'We're embedding in Upwork's freelancer community â€” posting weekly case studies, doing free invoice audits, and converting forum readers to waitlist signups at 8% rate' is a strategy. Depth on one channel beats breadth on five.",
-        "Show that you've already tested it. If you've run a small experiment â€” cold outreach that converted at 12%, a Reddit post that drove 200 signups, a partnership conversation with a platform â€” include the data. Investors want evidence that your go-to-market isn't theoretical. Even a small proof point changes the conversation from 'will this work?' to 'how do we scale this?'",
+        "Describe your first channel in detail, not five channels in generalities. 'We'll grow through content marketing, partnerships, social media, paid ads, and referrals' is a list, not a strategy. 'We're embedding in Upwork's freelancer community - posting weekly case studies, doing free invoice audits, and converting forum readers to waitlist signups at 8% rate' is a strategy. Depth on one channel beats breadth on five.",
+        "Show that you've already tested it. If you've run a small experiment - cold outreach that converted at 12%, a Reddit post that drove 200 signups, a partnership conversation with a platform - include the data. Investors want evidence that your go-to-market isn't theoretical. Even a small proof point changes the conversation from 'will this work?' to 'how do we scale this?'",
         "Explain your CAC and how it scales. If it costs you $15 to acquire a customer through manual outreach today, what does that look like at 10,000 customers? At some point you need a channel that doesn't require you personally DMing people. Show that you've thought about the transition from founder-led sales to scalable acquisition.",
       ],
       mistakes: [
         "Saying 'we'll go viral.' Virality is an outcome, not a strategy. No investor has ever funded a company because the founder said it would go viral. Show the mechanics: what makes someone share it, what's the referral loop, what's the K-factor?",
         "Confusing marketing channels with go-to-market strategy. 'We'll use Instagram and TikTok' is a channel choice. A go-to-market strategy answers: who is the first customer, how do you reach them, what makes them convert, and how do you do it again 1,000 times?",
-        "No mention of sales cycle or conversion funnel. How long does it take from first touch to paying customer? What are the steps? If you don't know yet, say so â€” but show that you're thinking about it.",
+        "No mention of sales cycle or conversion funnel. How long does it take from first touch to paying customer? What are the steps? If you don't know yet, say so - but show that you're thinking about it.",
       ],
-      example: "Phase 1 (now): Founder-led outreach in freelancer communities. Posting weekly in r/freelance (42K members), Freelancers Union Slack (8K members), and 3 niche Facebook groups. Current conversion: 200 visitors/week, 8% to waitlist, 14% waitlist-to-active. CAC: $0 (time only). Phase 2 (post-raise): Content SEO targeting 'freelance invoice template' keywords (12K monthly searches, low competition). Phase 3: Referral program â€” give a friend 3 free months, get 1 free month. Target: 5,000 users in 6 months.",
+      example: "Phase 1 (now): Founder-led outreach in freelancer communities. Posting weekly in r/freelance (42K members), Freelancers Union Slack (8K members), and 3 niche Facebook groups. Current conversion: 200 visitors/week, 8% to waitlist, 14% waitlist-to-active. CAC: $0 (time only). Phase 2 (post-raise): Content SEO targeting 'freelance invoice template' keywords (12K monthly searches, low competition). Phase 3: Referral program - give a friend 3 free months, get 1 free month. Target: 5,000 users in 6 months.",
     },
     {
       id: "business",
       title: "Business Model",
-      purpose: "Show how you make money â€” simply and credibly",
+      purpose: "Show how you make money - simply and credibly",
       tips: [
         "Answer three questions and nothing else: Who pays you? How much? How often? 'Freelancers pay $10/month for unlimited invoicing' is a complete business model slide. You can add details if they help, but the core must be instantly understandable.",
-        "If you have unit economics, show them. Customer Acquisition Cost (CAC), Lifetime Value (LTV), and the ratio between them. An LTV:CAC ratio above 3:1 is the benchmark. If you don't have real data yet, say so â€” and show your assumptions.",
-        "Compare to proven models. 'Same model as Mailchimp â€” free tier for small users, paid tiers that scale with usage' gives an investor an instant mental anchor.",
+        "If you have unit economics, show them. Customer Acquisition Cost (CAC), Lifetime Value (LTV), and the ratio between them. An LTV:CAC ratio above 3:1 is the benchmark. If you don't have real data yet, say so - and show your assumptions.",
+        "Compare to proven models. 'Same model as Mailchimp - free tier for small users, paid tiers that scale with usage' gives an investor an instant mental anchor.",
       ],
       mistakes: [
         "Showing 6 revenue streams. At your stage, you have one. Maybe two. Listing hypothetical future revenue streams (licensing, enterprise, marketplace fees, advertising) signals that you haven't focused on what actually works today.",
@@ -2758,7 +2550,7 @@ function PitchDeckResources() {
       title: "The Team",
       purpose: "Show why you're the people who should build this",
       tips: [
-        "One impressive line per person beats a full resume. 'Jane â€” 8 years in payments at Stripe, built their invoicing API' tells an investor everything they need. They don't need to know where she went to college or that she interned at Google in 2014.",
+        "One impressive line per person beats a full resume. 'Jane - 8 years in payments at Stripe, built their invoicing API' tells an investor everything they need. They don't need to know where she went to college or that she interned at Google in 2014.",
         "Show founder-market fit. Why do YOU care about this problem? Did you experience it yourself? Did you work in the industry? The best teams have a personal connection to the problem they're solving.",
         "If you're solo, show your support system. Advisors, early employees, technical collaborators. Being solo isn't a dealbreaker, but having no one around you is.",
       ],
@@ -2767,7 +2559,7 @@ function PitchDeckResources() {
         "Headshots that look like LinkedIn stock photos. Use real, recent photos that show personality. You're asking someone to bet on humans, not resumes.",
         "No explanation of role clarity. If you have two co-founders, it should be obvious who does what. 'CEO / Business' and 'CTO / Product' is sufficient.",
       ],
-      example: "Two headshots side by side. Jane Kim, CEO â€” 8 years in payments at Stripe, built invoicing API serving 400K businesses. Led product at invoice startup (acq. 2022). Marc Chen, CTO â€” Full-stack engineer, prev. Square. Built payment processing systems handling $2B annually. Below: 'Advised by [Name], former CFO of Intuit.'",
+      example: "Two headshots side by side. Jane Kim, CEO - 8 years in payments at Stripe, built invoicing API serving 400K businesses. Led product at invoice startup (acq. 2022). Marc Chen, CTO - Full-stack engineer, prev. Square. Built payment processing systems handling $2B annually. Below: 'Advised by [Name], former CFO of Intuit.'",
     },
     {
       id: "ask",
@@ -2775,7 +2567,7 @@ function PitchDeckResources() {
       purpose: "Tell them exactly what you want and what it buys",
       tips: [
         "Be specific about the amount and what it achieves. 'Raising $500K pre-seed to hire 2 engineers and reach 5,000 users by December' is actionable. An investor can evaluate whether $500K is reasonable for those milestones and whether those milestones are ambitious enough.",
-        "Show 2-3 milestones the money unlocks. Not a 12-month roadmap â€” just the major inflection points. 'Hire engineering team â†’ launch v2 with payment integration â†’ hit $10K MRR.' Each milestone should build toward the next fundraise or profitability.",
+        "Show 2-3 milestones the money unlocks. Not a 12-month roadmap - just the major inflection points. 'Hire engineering team -> launch v2 with payment integration -> hit $10K MRR.' Each milestone should build toward the next fundraise or profitability.",
         "End with a clear next step. 'I'd love to schedule a 30-minute deep dive. [email]. [calendly link].' Make it frictionless for them to say yes.",
       ],
       mistakes: [
@@ -2783,7 +2575,7 @@ function PitchDeckResources() {
         "Not showing what comes after the money. Investors want to know what the next milestone is and when you'll need to raise again (or won't).",
         "Asking for too wide a range. '$500K to $2M' says you don't know what you need. Pick a number.",
       ],
-      example: "Raising $500K on a $5M post-money SAFE. Use of funds: 60% engineering (2 senior hires), 25% growth experiments, 15% ops. Milestones: 5,000 active users, $10K MRR, launch payment processing by Q4. Next step: 30-min call â€” jane@acme.com",
+      example: "Raising $500K on a $5M post-money SAFE. Use of funds: 60% engineering (2 senior hires), 25% growth experiments, 15% ops. Milestones: 5,000 active users, $10K MRR, launch payment processing by Q4. Next step: 30-min call - jane@acme.com",
     },
   ];
 
@@ -2808,7 +2600,7 @@ function PitchDeckResources() {
           onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 28px rgba(139,92,246,0.35)"; }}
           onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(139,92,246,0.25)"; }}
         >
-          Build with Gamma â†’
+          Build with Gamma ->
           <span style={{ display: "block", fontSize: 10, fontWeight: 400, opacity: 0.75, marginTop: 2 }}>
             Auto-generate your deck
           </span>
@@ -2913,7 +2705,7 @@ function FounderToolkit() {
   const categories = [
     {
       title: "Design & Prototype",
-      icon: "\uD83C\uDFA8",
+      icon: "",
       color: "#EC4899",
       tools: [
         { name: "Figma", desc: "Design interfaces collaboratively", url: "https://figma.com", tag: "Free tier" },
@@ -2922,19 +2714,19 @@ function FounderToolkit() {
     },
     {
       title: "Build & Ship",
-      icon: "\u2692\uFE0F",
+      icon: "",
       color: "#3B82F6",
       tools: [
-        { name: "Cursor", desc: "AI-powered code editor \u2014 build 10x faster", url: "https://cursor.com", tag: "Free tier" },
+        { name: "Cursor", desc: "AI-powered code editor - build 10x faster", url: "https://cursor.com", tag: "Free tier" },
         { name: "Vercel", desc: "Deploy websites & apps instantly", url: "https://vercel.com", tag: "Free tier" },
-        { name: "Supabase", desc: "Backend, database, auth \u2014 all in one", url: "https://supabase.com", tag: "Free tier" },
+        { name: "Supabase", desc: "Backend, database, auth - all in one", url: "https://supabase.com", tag: "Free tier" },
         { name: "Railway", desc: "Deploy any backend with zero config", url: "https://railway.app", tag: "Free tier" },
         { name: "GitHub", desc: "Version control & collaboration", url: "https://github.com", tag: "Free" },
       ],
     },
     {
       title: "Marketing & Growth",
-      icon: "\uD83D\uDCC8",
+      icon: "",
       color: "#F59E0B",
       tools: [
         { name: "Mailchimp", desc: "Email marketing & newsletters", url: "https://mailchimp.com", tag: "Free tier" },
@@ -2945,7 +2737,7 @@ function FounderToolkit() {
     },
     {
       title: "Analytics & Feedback",
-      icon: "\uD83D\uDD0D",
+      icon: "",
       color: "#10B981",
       tools: [
         { name: "Hotjar", desc: "Heatmaps & user behavior recordings", url: "https://hotjar.com", tag: "Free tier" },
@@ -2961,7 +2753,7 @@ function FounderToolkit() {
         padding: "20px 24px", borderRadius: 14, background: T.bgCard, border: `1px solid ${T.border}`,
         marginBottom: 20, display: "flex", alignItems: "center", gap: 14,
       }}>
-        <span style={{ fontSize: 28 }}>{"\uD83D\uDEE0\uFE0F"}</span>
+        <span style={{ fontSize: 28 }}>{""}</span>
         <div>
           <p style={{ fontFamily: "DM Serif Display, serif", fontSize: 18, fontWeight: 400 }}>Ship faster with the right tools</p>
           <p style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>Curated apps and platforms to take your idea from zero to launched. Most have free tiers.</p>
@@ -3037,7 +2829,7 @@ function AdminCreateProfile({ role, onSave, onCancel }) {
       padding:28, maxWidth:560, animation:"fadeUp 0.3s ease",
     }}>
       <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
-        <span style={{ fontSize:24 }}>{isMember ? "ðŸ‘¤" : "ðŸŒŸ"}</span>
+        <span style={{ fontSize:24 }}>{isMember ? "" : ""}</span>
         <div>
           <h3 style={{ fontFamily:"DM Serif Display, serif", fontSize:20, fontWeight:400 }}>
             Create {isMember ? "Member" : "Mentor"} Profile
@@ -3163,9 +2955,9 @@ function AdminPage() {
   };
 
   const adminTabs = [
-    { id:"posts", label:"Posts", icon:"ðŸ“" },
-    { id:"codes", label:"Access Codes", icon:"ðŸ”‘" },
-    { id:"profiles", label:"Manage Profiles", icon:"ðŸ‘¥" },
+    { id:"posts", label:"Posts", icon:"" },
+    { id:"codes", label:"Access Codes", icon:"" },
+    { id:"profiles", label:"Manage Profiles", icon:"" },
   ];
 
   if (!loaded) return <PageShell title="Admin Panel" subtitle="Loading..."><div /></PageShell>;
@@ -3210,7 +3002,7 @@ function AdminPage() {
                   color:postType===t ? (t==="highlight"?"#F59E0B":t==="opportunity"?"#3B82F6":"#8B5CF6") : T.textDim,
                   border:`1px solid ${postType===t ? (t==="highlight"?"#F59E0B":t==="opportunity"?"#3B82F6":"#8B5CF6")+"44" : T.border}`,
                   cursor:"pointer", textTransform:"capitalize",
-                }}>{t==="highlight"?"â­":t==="opportunity"?"ðŸ’¼":"ðŸ“…"} {t}</button>
+                }}>{t==="highlight"?"":t==="opportunity"?"":""} {t}</button>
               ))}
             </div>
             <Input label="Title" value={postTitle} onChange={setPostTitle} placeholder="Announcement title..." />
@@ -3220,7 +3012,7 @@ function AdminPage() {
               padding:"10px 28px", borderRadius:10, fontSize:14, fontWeight:700, fontFamily:"Inter",
               background:postTitle.trim()?T.red:T.border, color:postTitle.trim()?T.white:T.textDim,
               border:"none", cursor:postTitle.trim()?"pointer":"default",
-            }}>{saving?"Publishing...":"Publish â†’"}</button>
+            }}>{saving?"Publishing...":"Publish ->"}</button>
           </div>
 
           {/* Existing Posts */}
@@ -3342,7 +3134,7 @@ function AdminPage() {
             <div style={{ display:"grid", gap:8 }}>
               {profiles.length === 0 && (
                 <div style={{ padding:32, borderRadius:14, background:T.bgCard, border:`1px solid ${T.border}`, textAlign:"center" }}>
-                  <p style={{ fontSize:24, marginBottom:8 }}>ðŸ‘¤</p>
+                  <p style={{ fontSize:24, marginBottom:8 }}></p>
                   <p style={{ color:T.textDim, fontSize:13 }}>No profiles yet. Create one using the buttons above.</p>
                 </div>
               )}
@@ -3388,7 +3180,6 @@ function AppShell({ role, profile, onLogout, onProfileUpdate }) {
   const pages = {
     dashboard: <DashboardPage role={role} onNav={setPage} />,
     members: <MembersPage />,
-    mentors: <MentorsPage />,
     resources: <ResourcesPage />,
     admin: <AdminPage />,
     myprofile: editing
@@ -3411,37 +3202,17 @@ export default function SideHustleClub() {
   const [role, setRole] = useState(null);
   const [profile, setProfile] = useState(null);
 
-  // On mount: check localStorage for a returning visitor's profile
+  // On mount: returning admins go straight to the app, everyone else sees the landing
   useEffect(() => {
-    (async () => {
-      try {
-        const storedProfileId = getStoredProfileId();
-        const storedRole = getStoredRole();
-        if (storedProfileId) {
-          const p = await db.getProfile(storedProfileId);
-          if (p) {
-            setRole(p.role);
-            setStoredRole(p.role);
-            setProfile(p);
-            setView("app");
-            return;
-          }
-          clearStoredProfileId();
-        }
-        if (storedRole === "admin") {
-          setRole("admin");
-          setView("app");
-        } else {
-          setView("landing");
-        }
-      } catch (e) {
-        console.error("Session restore failed:", e);
-        setView("landing");
-      }
-    })();
+    if (getStoredRole() === "admin") {
+      setRole("admin");
+      setView("app");
+    } else {
+      setView("landing");
+    }
   }, []);
 
-  // Get Started clicked (or admin code entered) â†’ straight into the app as a guest
+  // Get Started clicked (or admin code entered) -> straight into the app as a guest
   const handleAccessSuccess = (r) => {
     setRole(r);
     setStoredRole(r);
@@ -3454,7 +3225,6 @@ export default function SideHustleClub() {
 
   const handleLogout = async () => {
     clearStoredRole();
-    clearStoredProfileId();
     setRole(null); setProfile(null); setView("landing");
   };
 
