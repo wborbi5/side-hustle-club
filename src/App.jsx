@@ -1053,7 +1053,7 @@ function LandingPage({ onSuccess }) {
 
 // --- Sidebar ---
 const NAV_ITEMS = [
-  { id:"dashboard", label:"Dashboard", icon:"" },
+  { id:"dashboard", label:"Home", icon:"" },
   { id:"members", label:"Members", icon:"" },
   { id:"resources", label:"Resources", icon:"" },
   { id:"myprofile", label:"My Profile", icon:"" },
@@ -1520,6 +1520,71 @@ function ProfileCard({ profile, onClick }) {
 }
 
 // --- Dashboard Page ---
+// --- Informational content (from sites.miamioh.edu/side-hustle) ---
+const CLUB_PILLARS = [
+  {
+    title: "Build Real Projects",
+    text: "Join a community of students who are building and operating 40+ companies, gaining hands-on experience while turning ideas into real ventures and real money.",
+  },
+  {
+    title: "Learn Practical Skills",
+    text: "Learn directly from top-tier speakers, practice your skills in workshops, launch your own side hustle, and leverage our elite mentor network to scale your company.",
+  },
+  {
+    title: "Get Involved",
+    text: "Whether you're seeking your next business opportunity, expanding your professional network, or learning the skills to build and scale a company, the Side Hustle Club is the premier entrepreneurship group at Miami University - opening doors to opportunities you didn't know were possible.",
+  },
+];
+
+const MEMBER_OUTCOMES = [
+  {
+    project: "AI for Boomers",
+    founders: "Noah Kruthaupt & Andy Robbins",
+    text: "A book teaching the older generations the basics of AI as a tool - giving them independence, protecting them from scams, and making their lives simpler. Now published on Amazon and trending toward a Best Seller title.",
+  },
+  {
+    project: "Sparkli",
+    founders: "Zach Carlo & Andy Robbins",
+    text: "An app providing an extensive collection of dates on a user-friendly, searchable database that's tailor-made to suit user preferences and circumstances, all at no cost.",
+  },
+  {
+    project: "My Future Self",
+    founders: "Giancarlo Sarti & Kaya Hickin",
+    text: "An app built for life transformation, grounded in neuroscience and psychology, helping users develop and execute on personal goals to be the best version of themselves.",
+  },
+  {
+    project: "Peace Pizza",
+    founders: "Max Rohs",
+    text: "A student-run pizza truck that works to serve high quality food to events of any size.",
+  },
+];
+
+const MIAMI_LEGACY = [
+  {
+    name: "Emil Barr",
+    company: "Step Up Social LLC",
+    text: "Built from his dorm room, an advertising agency aimed at building social media growth through short form videos. Grew to millions in revenue, serving clients ranging from P&G to Hulk Hogan, until ultimately becoming part of Candid Network in 2024.",
+  },
+  {
+    name: "Michael Markesbery",
+    company: "OROS",
+    text: "With business partner Rithvik Vinik, built OROS using aerogel technology derived from NASA's space suit insulation to produce lightweight and warm outerwear. In 2024, OROS raised $22 million in Series B funding.",
+  },
+  {
+    name: "Oliver Zak & Selom Agbitor",
+    company: "Mad Rabbit",
+    text: "Met as students at Miami and built a tattoo aftercare skincare brand that helps tattooed skin heal, stay vibrant, and feel good. Appeared on Shark Tank and received a $500,000 investment from Mark Cuban; estimated $15-20 million in annual revenue.",
+  },
+  {
+    name: "Tsavo Knott",
+    company: "Pieces",
+    text: "An AI-powered developer productivity platform that captures and organizes code context to help developers recall, refactor, and reuse their work. Raised $21.5M+ in funding with an estimated enterprise value around $67M.",
+  },
+];
+
+const OFFICIAL_SITE_URL = "https://sites.miamioh.edu/side-hustle/home/";
+const RECRUITMENT_URL = "https://sites.miamioh.edu/side-hustle/recruitment/";
+
 function DashboardPage({ role, onNav }) {
   const [posts, setPosts] = useState([]);
   const [profiles, setProfiles] = useState([]);
@@ -1537,7 +1602,6 @@ function DashboardPage({ role, onNav }) {
     })();
   }, []);
 
-  const memberCount = profiles.filter(p => p.role==="member").length;
   const mentorCount = profiles.filter(p => p.role==="mentor").length;
   const projectMembers = profiles.filter(p => p.role==="member" && p.projectName);
   const recentMembers = [...profiles].sort((a,b) => b.createdAt - a.createdAt).slice(0, 8);
@@ -1548,11 +1612,8 @@ function DashboardPage({ role, onNav }) {
     return () => clearInterval(interval);
   }, [projectMembers.length]);
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-
   if (!loaded) return (
-    <PageShell title="Dashboard" subtitle="Loading...">
+    <PageShell title="Home" subtitle="Loading...">
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12 }}>
         {[1,2,3].map(i => (
           <div key={i} style={{ height:100, borderRadius:16, background:T.bgCard, border:`1px solid ${T.border}`, animation:"pulse 1.5s ease infinite" }} />
@@ -1566,31 +1627,45 @@ function DashboardPage({ role, onNav }) {
   return (
     <div style={{ flex:1, padding:"48px 52px", overflowY:"auto", maxWidth:900, animation:"fadeUp 0.4s ease" }}>
 
-      {/* Header - greeting left, stats right */}
+      {/* Hero - club identity left, stats right */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:56, gap:40 }}>
         <div>
           <h1 style={{
             fontFamily:"DM Serif Display, serif", fontSize:"clamp(32px, 4vw, 48px)", fontWeight:400,
             letterSpacing:"-0.025em", lineHeight:1.15, color:T.text,
           }}>
-            {greeting}
+            Miami University's Student Builder Community
           </h1>
-          <p style={{ fontSize:15, color:T.textMuted, marginTop:12, lineHeight:1.7, maxWidth:440 }}>
-            {profiles.length === 0
-              ? "Your community is just getting started."
-              : `${profiles.length} people building together.`
-            }
+          <p style={{ fontSize:15, color:T.textMuted, marginTop:14, lineHeight:1.7, maxWidth:480 }}>
+            The Side Hustle Club helps students turn ideas into execution through real projects and real business.
           </p>
         </div>
         <div style={{ display:"flex", gap:36, flexShrink:0, paddingTop:8 }}>
           {[
-            { label:"Members", val:memberCount },
+            { label:"Student Entrepreneurs", val:"100+" },
+            { label:"Companies", val:"40+" },
             { label:"Mentors", val:mentorCount },
-            { label:"Projects", val:projectMembers.length },
           ].map((s, i) => (
             <div key={s.label} style={{ textAlign:"right", animation:`fadeUp 0.4s ease ${i * 0.06}s both` }}>
               <p style={{ fontFamily:"DM Serif Display, serif", fontSize:28, fontWeight:400, letterSpacing:"-0.02em", color:T.text, lineHeight:1 }}>{s.val}</p>
               <p style={{ fontSize:10, color:T.textDim, marginTop:5, fontWeight:500, letterSpacing:"0.06em", textTransform:"uppercase" }}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ height:1, background:T.border, marginBottom:48 }} />
+
+      {/* What We Do */}
+      <div style={{ marginBottom:48, animation:"fadeUp 0.4s ease 0.1s both" }}>
+        <p style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:T.textDim, marginBottom:24 }}>
+          What We Do
+        </p>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(230px, 1fr))", gap:28 }}>
+          {CLUB_PILLARS.map((pl, i) => (
+            <div key={pl.title} style={{ animation:`fadeUp 0.4s ease ${0.1 + i * 0.06}s both` }}>
+              <h3 style={{ fontFamily:"DM Serif Display, serif", fontSize:19, fontWeight:400, marginBottom:8, letterSpacing:"-0.01em" }}>{pl.title}</h3>
+              <p style={{ fontSize:13, color:T.textMuted, lineHeight:1.7 }}>{pl.text}</p>
             </div>
           ))}
         </div>
@@ -1690,6 +1765,86 @@ function DashboardPage({ role, onNav }) {
             ))}
           </div>
         )}
+      </div>
+
+      <div style={{ height:1, background:T.border, marginBottom:48 }} />
+
+      {/* Member Success */}
+      <div style={{ marginBottom:48, animation:"fadeUp 0.4s ease 0.15s both" }}>
+        <p style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:T.textDim, marginBottom:24 }}>
+          Member Success
+        </p>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(280px, 1fr))", gap:28 }}>
+          {MEMBER_OUTCOMES.map((o, i) => (
+            <div key={o.project} style={{
+              padding:24, borderRadius:14, background:T.bgCard, border:`1px solid ${T.border}`,
+              animation:`fadeUp 0.4s ease ${0.15 + i * 0.05}s both`,
+            }}>
+              <h3 style={{ fontFamily:"DM Serif Display, serif", fontSize:20, fontWeight:400, letterSpacing:"-0.01em" }}>{o.project}</h3>
+              <p style={{ fontSize:12, color:T.textDim, marginTop:4, marginBottom:10 }}>by <span style={{ fontWeight:600, color:T.textMuted }}>{o.founders}</span></p>
+              <p style={{ fontSize:13, color:T.textMuted, lineHeight:1.7 }}>{o.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ height:1, background:T.border, marginBottom:48 }} />
+
+      {/* Miami Entrepreneur Legacy */}
+      <div style={{ marginBottom:48, animation:"fadeUp 0.4s ease 0.2s both" }}>
+        <p style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:T.textDim, marginBottom:8 }}>
+          Student Entrepreneurs @ Miami University
+        </p>
+        <p style={{ fontSize:13, color:T.textDim, marginBottom:24, lineHeight:1.6 }}>
+          Miami has a long line of student founders who started right where you are.
+        </p>
+        <div>
+          {MIAMI_LEGACY.map((f, i) => (
+            <div key={f.company} style={{
+              padding:"20px 0",
+              borderBottom: i < MIAMI_LEGACY.length - 1 ? `1px solid ${T.border}` : "none",
+              animation:`fadeUp 0.4s ease ${0.2 + i * 0.05}s both`,
+            }}>
+              <div style={{ display:"flex", alignItems:"baseline", gap:10, flexWrap:"wrap", marginBottom:6 }}>
+                <h3 style={{ fontFamily:"DM Serif Display, serif", fontSize:18, fontWeight:400, letterSpacing:"-0.01em" }}>{f.company}</h3>
+                <span style={{ fontSize:12, color:T.textDim }}>{f.name}</span>
+              </div>
+              <p style={{ fontSize:13, color:T.textMuted, lineHeight:1.7, maxWidth:640 }}>{f.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ height:1, background:T.border, marginBottom:48 }} />
+
+      {/* Get Involved CTA */}
+      <div style={{ marginBottom:48, animation:"fadeUp 0.4s ease 0.25s both" }}>
+        <p style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:T.textDim, marginBottom:16 }}>
+          Join Us
+        </p>
+        <p style={{ fontSize:14, color:T.textMuted, lineHeight:1.7, maxWidth:520, marginBottom:20 }}>
+          Applications, events, and recruitment info live on our official Miami University site.
+        </p>
+        <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
+          <button onClick={() => window.open(RECRUITMENT_URL, "_blank")} style={{
+            padding:"11px 26px", borderRadius:10, fontSize:13, fontFamily:"DM Sans", fontWeight:700,
+            background:T.red, color:T.white, border:"none", cursor:"pointer",
+            boxShadow:`0 0 20px ${T.redGlow}`, transition:"transform 0.2s ease",
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform="scale(1.03)"}
+          onMouseLeave={e => e.currentTarget.style.transform="scale(1)"}>
+            Apply Now
+          </button>
+          <button onClick={() => window.open(OFFICIAL_SITE_URL, "_blank")} style={{
+            padding:"11px 26px", borderRadius:10, fontSize:13, fontFamily:"DM Sans", fontWeight:600,
+            background:"transparent", color:T.textMuted, border:`1px solid ${T.border}`, cursor:"pointer",
+            transition:"all 0.2s ease",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor=T.red; e.currentTarget.style.color=T.red; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor=T.border; e.currentTarget.style.color=T.textMuted; }}>
+            Official Site {"->"}
+          </button>
+        </div>
       </div>
 
       <div style={{ height:1, background:T.border, marginBottom:48 }} />
