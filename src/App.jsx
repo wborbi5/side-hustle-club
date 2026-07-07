@@ -190,6 +190,7 @@ const GLOBAL_CSS = `
   @keyframes textReveal { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
   @keyframes caretBlink { 0%,100%{opacity:0} 50%{opacity:0.8} }
   @keyframes screenWipe { 0%{opacity:0} 60%{opacity:0} 100%{opacity:1} }
+  @media (max-width: 860px) { .hero-collage { display: none !important; } }
   @keyframes heroFadeIn { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
   @keyframes specItemIn { from{opacity:0;transform:translateX(-12px)} to{opacity:1;transform:translateX(0)} }
   @keyframes memberCardIn { from{opacity:0;transform:scale(0.9) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
@@ -1608,8 +1609,8 @@ function DashboardPage({ role, onNav }) {
           background:`radial-gradient(circle, ${LANDING_ACCENT}14 0%, transparent 65%)`,
           filter:"blur(40px)", pointerEvents:"none",
         }} />
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:40, position:"relative" }}>
-          <div>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:48, position:"relative" }}>
+          <div style={{ flex:1, minWidth:0 }}>
             <p style={{ fontSize:12, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase", color:LANDING_ACCENT, marginBottom:14 }}>
               Side Hustle Club
             </p>
@@ -1623,17 +1624,31 @@ function DashboardPage({ role, onNav }) {
               We help students turn ideas into execution through real projects and real business.
               Come for the skills, stay for the people.
             </p>
+            <div style={{ display:"flex", gap:36, marginTop:28 }}>
+              {[
+                { label:"Student Entrepreneurs", val:"100+" },
+                { label:"Companies", val:"40+" },
+              ].map((s, i) => (
+                <div key={s.label} style={{ animation:`fadeUp 0.4s ease ${i * 0.06}s both` }}>
+                  <p style={{ fontFamily:"DM Serif Display, serif", fontSize:28, fontWeight:400, letterSpacing:"-0.02em", color:T.text, lineHeight:1 }}>{s.val}</p>
+                  <p style={{ fontSize:10, color:T.textDim, marginTop:5, fontWeight:500, letterSpacing:"0.06em", textTransform:"uppercase" }}>{s.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <div style={{ display:"flex", gap:36, flexShrink:0, paddingTop:8 }}>
-            {[
-              { label:"Student Entrepreneurs", val:"100+" },
-              { label:"Companies", val:"40+" },
-            ].map((s, i) => (
-              <div key={s.label} style={{ textAlign:"right", animation:`fadeUp 0.4s ease ${i * 0.06}s both` }}>
-                <p style={{ fontFamily:"DM Serif Display, serif", fontSize:28, fontWeight:400, letterSpacing:"-0.02em", color:T.text, lineHeight:1 }}>{s.val}</p>
-                <p style={{ fontSize:10, color:T.textDim, marginTop:5, fontWeight:500, letterSpacing:"0.06em", textTransform:"uppercase" }}>{s.label}</p>
-              </div>
-            ))}
+
+          {/* Photo collage - right side, desktop only (hidden under 860px via GLOBAL_CSS) */}
+          <div className="hero-collage" style={{ flexShrink:0, width:310, height:380, position:"relative" }}>
+            <img src="/photos/pitch-night.jpg" alt="Pitch night" style={{
+              position:"absolute", top:0, left:0, width:215, borderRadius:14,
+              transform:"rotate(-4deg)", border:`1px solid ${T.border}`,
+              boxShadow:"0 16px 48px rgba(0,0,0,0.45)", animation:"fadeUp 0.6s ease 0.15s both",
+            }} />
+            <img src="/photos/forbes-summit.png" alt="Forbes Under 30 Summit" style={{
+              position:"absolute", top:140, right:0, width:165, borderRadius:14,
+              transform:"rotate(4deg)", border:`1px solid ${LANDING_ACCENT}44`,
+              boxShadow:`0 16px 48px rgba(0,0,0,0.5), 0 0 60px ${LANDING_ACCENT}18`, animation:"fadeUp 0.6s ease 0.3s both",
+            }} />
           </div>
         </div>
       </div>
@@ -1650,6 +1665,47 @@ function DashboardPage({ role, onNav }) {
             <div key={pl.title} style={{ animation:`fadeUp 0.4s ease ${0.1 + i * 0.06}s both` }}>
               <h3 style={{ fontFamily:"DM Serif Display, serif", fontSize:19, fontWeight:400, marginBottom:8, letterSpacing:"-0.01em" }}>{pl.title}</h3>
               <p style={{ fontSize:13, color:T.textMuted, lineHeight:1.7 }}>{pl.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ height:1, background:T.border, marginBottom:48 }} />
+
+      {/* Club Life */}
+      <div style={{ marginBottom:48, animation:"fadeUp 0.4s ease 0.1s both" }}>
+        <p style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:T.textDim, marginBottom:8 }}>
+          Club Life
+        </p>
+        <p style={{ fontSize:13, color:T.textDim, marginBottom:24, lineHeight:1.6 }}>
+          Summits, pitch nights, startup tours - it's not all spreadsheets.
+        </p>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))", gap:16 }}>
+          {[
+            { src:"/photos/union-hall.jpg", cap:"Startup tour - Union Hall, Cincinnati" },
+            { src:"/photos/workshop.png", cap:"Speaker workshops" },
+            { src:"/photos/company-visit.png", cap:"Company visits" },
+          ].map((ph, i) => (
+            <div key={ph.src} style={{ animation:`fadeUp 0.4s ease ${0.1 + i * 0.06}s both` }}>
+              <div style={{
+                borderRadius:12, overflow:"hidden", border:`1px solid ${T.border}`,
+                transition:"all 0.35s cubic-bezier(0.16,1,0.3,1)",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.borderColor = LANDING_ACCENT + "55";
+                e.currentTarget.style.boxShadow = `0 12px 36px ${LANDING_ACCENT}1a`;
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.borderColor = T.border;
+                e.currentTarget.style.boxShadow = "none";
+              }}>
+                <img src={ph.src} alt={ph.cap} style={{
+                  width:"100%", height:180, objectFit:"cover", display:"block",
+                }} />
+              </div>
+              <p style={{ fontSize:11, color:T.textDim, marginTop:8 }}>{ph.cap}</p>
             </div>
           ))}
         </div>
