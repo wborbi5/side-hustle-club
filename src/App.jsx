@@ -1540,53 +1540,30 @@ const MEMBER_OUTCOMES = [
   {
     project: "AI for Boomers",
     founders: "Noah Kruthaupt & Andy Robbins",
+    photos: [NOAH_IMG, ANDY_IMG],
     text: "A book teaching the older generations the basics of AI as a tool - giving them independence, protecting them from scams, and making their lives simpler. Now published on Amazon and trending toward a Best Seller title.",
   },
   {
     project: "Sparkli",
     founders: "Zach Carlo & Andy Robbins",
+    photos: [ZACH_IMG, ANDY_IMG],
     text: "An app providing an extensive collection of dates on a user-friendly, searchable database that's tailor-made to suit user preferences and circumstances, all at no cost.",
   },
   {
     project: "My Future Self",
     founders: "Giancarlo Sarti & Kaya Hickin",
+    photos: [],
     text: "An app built for life transformation, grounded in neuroscience and psychology, helping users develop and execute on personal goals to be the best version of themselves.",
   },
   {
     project: "Peace Pizza",
     founders: "Max Rohs",
+    photos: [],
     text: "A student-run pizza truck that works to serve high quality food to events of any size.",
   },
 ];
 
-const MIAMI_LEGACY = [
-  {
-    name: "Emil Barr",
-    company: "Step Up Social LLC",
-    text: "Built from his dorm room, an advertising agency aimed at building social media growth through short form videos. Grew to millions in revenue, serving clients ranging from P&G to Hulk Hogan, until ultimately becoming part of Candid Network in 2024.",
-  },
-  {
-    name: "Michael Markesbery",
-    company: "OROS",
-    text: "With business partner Rithvik Vinik, built OROS using aerogel technology derived from NASA's space suit insulation to produce lightweight and warm outerwear. In 2024, OROS raised $22 million in Series B funding.",
-  },
-  {
-    name: "Oliver Zak & Selom Agbitor",
-    company: "Mad Rabbit",
-    text: "Met as students at Miami and built a tattoo aftercare skincare brand that helps tattooed skin heal, stay vibrant, and feel good. Appeared on Shark Tank and received a $500,000 investment from Mark Cuban; estimated $15-20 million in annual revenue.",
-  },
-  {
-    name: "Tsavo Knott",
-    company: "Pieces",
-    text: "An AI-powered developer productivity platform that captures and organizes code context to help developers recall, refactor, and reuse their work. Raised $21.5M+ in funding with an estimated enterprise value around $67M.",
-  },
-];
-
-const OFFICIAL_SITE_URL = "https://sites.miamioh.edu/side-hustle/home/";
-const RECRUITMENT_URL = "https://sites.miamioh.edu/side-hustle/recruitment/";
-
 function DashboardPage({ role, onNav }) {
-  const [posts, setPosts] = useState([]);
   const [profiles, setProfiles] = useState([]);
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [loaded, setLoaded] = useState(false);
@@ -1594,17 +1571,13 @@ function DashboardPage({ role, onNav }) {
 
   useEffect(() => {
     (async () => {
-      const p = await db.getPosts();
       const pr = await db.getProfiles();
-      setPosts(p);
       setProfiles(pr);
       setLoaded(true);
     })();
   }, []);
 
-  const mentorCount = profiles.filter(p => p.role==="mentor").length;
   const projectMembers = profiles.filter(p => p.role==="member" && p.projectName);
-  const recentMembers = [...profiles].sort((a,b) => b.createdAt - a.createdAt).slice(0, 8);
 
   useEffect(() => {
     if (projectMembers.length <= 1) return;
@@ -1628,29 +1601,40 @@ function DashboardPage({ role, onNav }) {
     <div style={{ flex:1, padding:"48px 52px", overflowY:"auto", maxWidth:900, animation:"fadeUp 0.4s ease" }}>
 
       {/* Hero - club identity left, stats right */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:56, gap:40 }}>
-        <div>
-          <h1 style={{
-            fontFamily:"DM Serif Display, serif", fontSize:"clamp(32px, 4vw, 48px)", fontWeight:400,
-            letterSpacing:"-0.025em", lineHeight:1.15, color:T.text,
-          }}>
-            Miami University's Student Builder Community
-          </h1>
-          <p style={{ fontSize:15, color:T.textMuted, marginTop:14, lineHeight:1.7, maxWidth:480 }}>
-            The Side Hustle Club helps students turn ideas into execution through real projects and real business.
-          </p>
-        </div>
-        <div style={{ display:"flex", gap:36, flexShrink:0, paddingTop:8 }}>
-          {[
-            { label:"Student Entrepreneurs", val:"100+" },
-            { label:"Companies", val:"40+" },
-            { label:"Mentors", val:mentorCount },
-          ].map((s, i) => (
-            <div key={s.label} style={{ textAlign:"right", animation:`fadeUp 0.4s ease ${i * 0.06}s both` }}>
-              <p style={{ fontFamily:"DM Serif Display, serif", fontSize:28, fontWeight:400, letterSpacing:"-0.02em", color:T.text, lineHeight:1 }}>{s.val}</p>
-              <p style={{ fontSize:10, color:T.textDim, marginTop:5, fontWeight:500, letterSpacing:"0.06em", textTransform:"uppercase" }}>{s.label}</p>
-            </div>
-          ))}
+      <div style={{ position:"relative", marginBottom:56 }}>
+        {/* Warm glow behind hero */}
+        <div style={{
+          position:"absolute", top:-80, left:-120, width:420, height:420, borderRadius:"50%",
+          background:`radial-gradient(circle, ${LANDING_ACCENT}14 0%, transparent 65%)`,
+          filter:"blur(40px)", pointerEvents:"none",
+        }} />
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:40, position:"relative" }}>
+          <div>
+            <p style={{ fontSize:12, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase", color:LANDING_ACCENT, marginBottom:14 }}>
+              Side Hustle Club
+            </p>
+            <h1 style={{
+              fontFamily:"DM Serif Display, serif", fontSize:"clamp(32px, 4vw, 48px)", fontWeight:400,
+              letterSpacing:"-0.025em", lineHeight:1.15, color:T.text,
+            }}>
+              Miami University's Student Builder Community
+            </h1>
+            <p style={{ fontSize:15, color:T.textMuted, marginTop:14, lineHeight:1.7, maxWidth:480 }}>
+              We help students turn ideas into execution through real projects and real business.
+              Come for the skills, stay for the people.
+            </p>
+          </div>
+          <div style={{ display:"flex", gap:36, flexShrink:0, paddingTop:8 }}>
+            {[
+              { label:"Student Entrepreneurs", val:"100+" },
+              { label:"Companies", val:"40+" },
+            ].map((s, i) => (
+              <div key={s.label} style={{ textAlign:"right", animation:`fadeUp 0.4s ease ${i * 0.06}s both` }}>
+                <p style={{ fontFamily:"DM Serif Display, serif", fontSize:28, fontWeight:400, letterSpacing:"-0.02em", color:T.text, lineHeight:1 }}>{s.val}</p>
+                <p style={{ fontSize:10, color:T.textDim, marginTop:5, fontWeight:500, letterSpacing:"0.06em", textTransform:"uppercase" }}>{s.label}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -1666,6 +1650,50 @@ function DashboardPage({ role, onNav }) {
             <div key={pl.title} style={{ animation:`fadeUp 0.4s ease ${0.1 + i * 0.06}s both` }}>
               <h3 style={{ fontFamily:"DM Serif Display, serif", fontSize:19, fontWeight:400, marginBottom:8, letterSpacing:"-0.01em" }}>{pl.title}</h3>
               <p style={{ fontSize:13, color:T.textMuted, lineHeight:1.7 }}>{pl.text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ height:1, background:T.border, marginBottom:48 }} />
+
+      {/* Faces of the Club */}
+      <div style={{ marginBottom:48, animation:"fadeUp 0.4s ease 0.12s both" }}>
+        <p style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:T.textDim, marginBottom:8 }}>
+          The People
+        </p>
+        <p style={{ fontSize:13, color:T.textDim, marginBottom:24, lineHeight:1.6 }}>
+          Real students, building real things. This could be you.
+        </p>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(150px, 1fr))", gap:16 }}>
+          {FEATURED_MEMBERS.map((m, i) => (
+            <div key={m.name} style={{ animation:`fadeUp 0.4s ease ${0.12 + i * 0.06}s both` }}>
+              <div style={{
+                width:"100%", aspectRatio:"3/4", borderRadius:14, overflow:"hidden",
+                border:`1px solid ${T.border}`, position:"relative",
+                transition:"all 0.4s cubic-bezier(0.16,1,0.3,1)",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.borderColor = LANDING_ACCENT + "66";
+                e.currentTarget.style.boxShadow = `0 12px 36px ${LANDING_ACCENT}22`;
+                const img = e.currentTarget.querySelector("img");
+                if (img) img.style.filter = "grayscale(0%)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.borderColor = T.border;
+                e.currentTarget.style.boxShadow = "none";
+                const img = e.currentTarget.querySelector("img");
+                if (img) img.style.filter = "grayscale(40%)";
+              }}>
+                <img src={m.photo} alt={m.name} style={{
+                  width:"100%", height:"100%", objectFit:"cover", objectPosition:"center top",
+                  filter:"grayscale(40%)", transition:"filter 0.4s ease", display:"block",
+                }} />
+              </div>
+              <p style={{ fontSize:13, fontWeight:600, marginTop:10 }}>{m.name}</p>
+              <p style={{ fontSize:11, color:LANDING_ACCENT, marginTop:2, lineHeight:1.5 }}>{m.project}</p>
             </div>
           ))}
         </div>
@@ -1726,49 +1754,6 @@ function DashboardPage({ role, onNav }) {
 
       {featured && <div style={{ height:1, background:T.border, marginBottom:48 }} />}
 
-      {/* Announcements */}
-      <div style={{ marginBottom:48 }}>
-        <p style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:T.textDim, marginBottom:24 }}>
-          Announcements
-        </p>
-        {posts.length === 0 ? (
-          <p style={{ fontSize:14, color:T.textDim, fontStyle:"italic", lineHeight:1.7 }}>
-            No announcements yet.{" "}
-            {role==="admin" ? "Head to Admin Panel to post updates." : "Check back soon."}
-          </p>
-        ) : (
-          <div>
-            {posts.map((post, pi) => (
-              <div key={post.id} style={{
-                paddingBottom:24, marginBottom:24,
-                borderBottom: pi < posts.length - 1 ? `1px solid ${T.border}` : "none",
-                animation:`fadeUp 0.3s ease ${pi * 0.04}s both`,
-              }}>
-                <div style={{ display:"flex", alignItems:"baseline", gap:12, marginBottom:6 }}>
-                  <span style={{ fontSize:11, fontWeight:500, color:T.textDim, textTransform:"capitalize", fontStyle:"italic" }}>{post.type}</span>
-                  <span style={{ fontSize:11, color:T.textDim }}>{new Date(post.createdAt).toLocaleDateString()}</span>
-                </div>
-                <h3 style={{ fontFamily:"DM Serif Display, serif", fontSize:20, fontWeight:400, lineHeight:1.3, marginBottom:6 }}>{post.title}</h3>
-                <p style={{ fontSize:14, color:T.textMuted, lineHeight:1.7 }}>{post.content}</p>
-                {post.link && (
-                  <p onClick={() => window.open(post.link,"_blank")} style={{
-                    marginTop:8, fontSize:13, color:T.textDim, cursor:"pointer",
-                    textDecoration:"underline", textUnderlineOffset:3, textDecorationColor:T.border,
-                    transition:"color 0.15s",
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.color=T.text}
-                  onMouseLeave={e => e.currentTarget.style.color=T.textDim}>
-                    Read more
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div style={{ height:1, background:T.border, marginBottom:48 }} />
-
       {/* Member Success */}
       <div style={{ marginBottom:48, animation:"fadeUp 0.4s ease 0.15s both" }}>
         <p style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:T.textDim, marginBottom:24 }}>
@@ -1779,8 +1764,23 @@ function DashboardPage({ role, onNav }) {
             <div key={o.project} style={{
               padding:24, borderRadius:14, background:T.bgCard, border:`1px solid ${T.border}`,
               animation:`fadeUp 0.4s ease ${0.15 + i * 0.05}s both`,
-            }}>
-              <h3 style={{ fontFamily:"DM Serif Display, serif", fontSize:20, fontWeight:400, letterSpacing:"-0.01em" }}>{o.project}</h3>
+              transition:"all 0.3s ease",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = LANDING_ACCENT + "44"; e.currentTarget.style.boxShadow = `0 8px 28px ${LANDING_ACCENT}12`; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.boxShadow = "none"; }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+                <h3 style={{ fontFamily:"DM Serif Display, serif", fontSize:20, fontWeight:400, letterSpacing:"-0.01em" }}>{o.project}</h3>
+                {o.photos.length > 0 && (
+                  <div style={{ display:"flex", flexShrink:0 }}>
+                    {o.photos.map((ph, pi) => (
+                      <img key={pi} src={ph} alt="" style={{
+                        width:34, height:34, borderRadius:"50%", objectFit:"cover", objectPosition:"center top",
+                        border:`2px solid ${T.bgCard}`, marginLeft: pi > 0 ? -10 : 0,
+                      }} />
+                    ))}
+                  </div>
+                )}
+              </div>
               <p style={{ fontSize:12, color:T.textDim, marginTop:4, marginBottom:10 }}>by <span style={{ fontWeight:600, color:T.textMuted }}>{o.founders}</span></p>
               <p style={{ fontSize:13, color:T.textMuted, lineHeight:1.7 }}>{o.text}</p>
             </div>
@@ -1788,93 +1788,14 @@ function DashboardPage({ role, onNav }) {
         </div>
       </div>
 
-      <div style={{ height:1, background:T.border, marginBottom:48 }} />
-
-      {/* Miami Entrepreneur Legacy */}
-      <div style={{ marginBottom:48, animation:"fadeUp 0.4s ease 0.2s both" }}>
-        <p style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:T.textDim, marginBottom:8 }}>
-          Student Entrepreneurs @ Miami University
+      {/* Warm sign-off */}
+      <div style={{ textAlign:"center", padding:"24px 0 40px", animation:"fadeUp 0.4s ease 0.25s both" }}>
+        <p style={{ fontFamily:"DM Serif Display, serif", fontSize:22, fontWeight:400, fontStyle:"italic", color:T.textMuted, letterSpacing:"-0.01em" }}>
+          Come build something with us.
         </p>
-        <p style={{ fontSize:13, color:T.textDim, marginBottom:24, lineHeight:1.6 }}>
-          Miami has a long line of student founders who started right where you are.
+        <p style={{ fontSize:12, color:T.textDim, marginTop:8 }}>
+          Bring an idea, or just bring curiosity - everyone starts somewhere.
         </p>
-        <div>
-          {MIAMI_LEGACY.map((f, i) => (
-            <div key={f.company} style={{
-              padding:"20px 0",
-              borderBottom: i < MIAMI_LEGACY.length - 1 ? `1px solid ${T.border}` : "none",
-              animation:`fadeUp 0.4s ease ${0.2 + i * 0.05}s both`,
-            }}>
-              <div style={{ display:"flex", alignItems:"baseline", gap:10, flexWrap:"wrap", marginBottom:6 }}>
-                <h3 style={{ fontFamily:"DM Serif Display, serif", fontSize:18, fontWeight:400, letterSpacing:"-0.01em" }}>{f.company}</h3>
-                <span style={{ fontSize:12, color:T.textDim }}>{f.name}</span>
-              </div>
-              <p style={{ fontSize:13, color:T.textMuted, lineHeight:1.7, maxWidth:640 }}>{f.text}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ height:1, background:T.border, marginBottom:48 }} />
-
-      {/* Get Involved CTA */}
-      <div style={{ marginBottom:48, animation:"fadeUp 0.4s ease 0.25s both" }}>
-        <p style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:T.textDim, marginBottom:16 }}>
-          Join Us
-        </p>
-        <p style={{ fontSize:14, color:T.textMuted, lineHeight:1.7, maxWidth:520, marginBottom:20 }}>
-          Applications, events, and recruitment info live on our official Miami University site.
-        </p>
-        <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
-          <button onClick={() => window.open(RECRUITMENT_URL, "_blank")} style={{
-            padding:"11px 26px", borderRadius:10, fontSize:13, fontFamily:"DM Sans", fontWeight:700,
-            background:T.red, color:T.white, border:"none", cursor:"pointer",
-            boxShadow:`0 0 20px ${T.redGlow}`, transition:"transform 0.2s ease",
-          }}
-          onMouseEnter={e => e.currentTarget.style.transform="scale(1.03)"}
-          onMouseLeave={e => e.currentTarget.style.transform="scale(1)"}>
-            Apply Now
-          </button>
-          <button onClick={() => window.open(OFFICIAL_SITE_URL, "_blank")} style={{
-            padding:"11px 26px", borderRadius:10, fontSize:13, fontFamily:"DM Sans", fontWeight:600,
-            background:"transparent", color:T.textMuted, border:`1px solid ${T.border}`, cursor:"pointer",
-            transition:"all 0.2s ease",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor=T.red; e.currentTarget.style.color=T.red; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor=T.border; e.currentTarget.style.color=T.textMuted; }}>
-            Official Site {"->"}
-          </button>
-        </div>
-      </div>
-
-      <div style={{ height:1, background:T.border, marginBottom:48 }} />
-
-      {/* Recent Joins */}
-      <div style={{ marginBottom:48, animation:"fadeUp 0.4s ease 0.2s both" }}>
-        <p style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:T.textDim, marginBottom:20 }}>
-          Recent Joins
-        </p>
-        {recentMembers.length === 0 ? (
-          <p style={{ fontSize:13, color:T.textDim, fontStyle:"italic" }}>No members yet.</p>
-        ) : (
-          <div>
-            {recentMembers.map((p, i) => (
-              <div key={p.id} onClick={() => setSelectedProfile(p)} style={{
-                display:"flex", alignItems:"center", gap:12, padding:"10px 0",
-                borderBottom: i < recentMembers.length - 1 ? `1px solid ${T.border}` : "none",
-                cursor:"pointer", transition:"opacity 0.15s",
-              }}
-              onMouseEnter={e => e.currentTarget.style.opacity="0.7"}
-              onMouseLeave={e => e.currentTarget.style.opacity="1"}>
-                <Avatar photo={p.photo} name={p.name} size={28} />
-                <div style={{ flex:1, minWidth:0 }}>
-                  <p style={{ fontSize:13, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{p.name}</p>
-                </div>
-                <p style={{ fontSize:11, color:T.textDim, fontStyle:"italic", textTransform:"capitalize" }}>{p.role}</p>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {selectedProfile && <ProfileModal profile={selectedProfile} onClose={() => setSelectedProfile(null)} />}
@@ -1967,10 +1888,9 @@ function BrowsePage({ filterRole, title, subtitle }) {
 function MembersPage() { return <BrowsePage filterRole="member" title="Members" subtitle="Browse and find fellow builders" />; }
 // --- Resources Page ---
 function ResourcesPage() {
-  const [activeTab, setActiveTab] = useState("validator");
+  const [activeTab, setActiveTab] = useState("skills");
 
   const tabs = [
-    { id:"validator", label:"Idea Validator" },
     { id:"skills", label:"Skills to Learn" },
     { id:"pitchdeck", label:"Build Your Pitch Deck" },
     { id:"toolkit", label:"Founder Toolkit" },
@@ -1996,7 +1916,6 @@ function ResourcesPage() {
         })}
       </div>
 
-      {activeTab === "validator" && <IdeaValidator />}
       {activeTab === "skills" && <SkillsToLearn />}
       {activeTab === "pitchdeck" && <PitchDeckResources />}
       {activeTab === "toolkit" && <FounderToolkit />}
@@ -2004,256 +1923,6 @@ function ResourcesPage() {
   );
 }
 
-function IdeaValidator() {
-  const [problem, setProblem] = useState("");
-  const [solution, setSolution] = useState("");
-  const [buildPlan, setBuildPlan] = useState("");
-  const [slides, setSlides] = useState(null);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const canSubmit = problem.trim().length > 10 && solution.trim().length > 10;
-
-  const generate = async () => {
-    setLoading(true);
-    setError(null);
-    setSlides(null);
-    setCurrentSlide(0);
-
-    try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 2048,
-          system: "You are a startup analyst. You always respond with ONLY raw JSON arrays. No markdown, no backticks, no explanation - just the JSON array.",
-          messages: [{
-            role: "user",
-            content: `Analyze this startup idea. Produce exactly 6 JSON objects in an array. Be specific - use real numbers, real company names, real costs where possible. Max 4 points per slide, each point 1-2 sentences.
-
-PROBLEM: ${problem}
-SOLUTION: ${solution}
-${buildPlan ? `BUILD PLAN: ${buildPlan}` : ""}
-
-Return ONLY a JSON array in this exact format:
-[
-  {"title":"The Problem","subtitle":"Size & who has it","points":["...","...","..."]},
-  {"title":"Potential Solutions","subtitle":"Approaches worth exploring","points":["...","...","..."]},
-  {"title":"Competitive Landscape","subtitle":"Who you're up against","points":["...","...","..."]},
-  {"title":"Cost to Launch","subtitle":"What it takes to start","points":["...","...","..."]},
-  {"title":"Willingness to Pay","subtitle":"Revenue & customer pricing","points":["...","...","..."]},
-  {"title":"First 5 Steps","subtitle":"Start here, this week","points":["1. ...","2. ...","3. ...","4. ...","5. ..."]}
-]`
-          }],
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("API returned " + response.status);
-      }
-
-      const data = await response.json();
-      const text = data.content?.filter(i => i.type === "text").map(i => i.text).join("") || "";
-      
-      // Robust JSON extraction - find the outermost [ ... ]
-      const start = text.indexOf("[");
-      const end = text.lastIndexOf("]");
-      if (start === -1 || end === -1 || end <= start) {
-        throw new Error("No JSON array found in response");
-      }
-      const jsonStr = text.slice(start, end + 1);
-      const parsed = JSON.parse(jsonStr);
-      
-      if (Array.isArray(parsed) && parsed.length === 6 && parsed.every(s => s.title && s.points)) {
-        setSlides(parsed);
-      } else {
-        setError("Unexpected response format. Try again.");
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Something went wrong. Please try again.");
-    }
-    setLoading(false);
-  };
-
-  // --- Input view ---
-  if (!slides && !loading) {
-    return (
-      <div style={{ animation:"fadeUp 0.3s ease", maxWidth:580 }}>
-        <div style={{ marginBottom:40 }}>
-          <h3 style={{ fontFamily:"DM Serif Display, serif", fontSize:24, fontWeight:400, marginBottom:8 }}>
-            Validate your idea
-          </h3>
-          <p style={{ fontSize:14, color:T.textMuted, lineHeight:1.7 }}>
-            Describe what you're building. We'll break down the market, competition, costs, and give you a concrete plan to start.
-          </p>
-        </div>
-
-        <div style={{ marginBottom:28 }}>
-          <label style={{ display:"block", fontSize:13, fontWeight:600, color:T.text, marginBottom:8 }}>
-            What problem are you trying to solve?
-          </label>
-          <textarea value={problem} onChange={e => setProblem(e.target.value)}
-            placeholder="Describe the pain point you've observed..."
-            style={{ ...inputStyle, minHeight:100, resize:"vertical" }}
-            onFocus={e => e.currentTarget.style.borderColor=T.red+"88"}
-            onBlur={e => e.currentTarget.style.borderColor=T.border} />
-        </div>
-
-        <div style={{ marginBottom:28 }}>
-          <label style={{ display:"block", fontSize:13, fontWeight:600, color:T.text, marginBottom:8 }}>
-            What is your idea for a solution?
-          </label>
-          <textarea value={solution} onChange={e => setSolution(e.target.value)}
-            placeholder="How would you solve this problem..."
-            style={{ ...inputStyle, minHeight:80, resize:"vertical" }}
-            onFocus={e => e.currentTarget.style.borderColor=T.red+"88"}
-            onBlur={e => e.currentTarget.style.borderColor=T.border} />
-        </div>
-
-        <div style={{ marginBottom:36 }}>
-          <label style={{ display:"block", fontSize:13, fontWeight:600, color:T.text, marginBottom:8 }}>
-            How do you plan to build this? <span style={{ fontWeight:400, color:T.textDim }}>(optional)</span>
-          </label>
-          <textarea value={buildPlan} onChange={e => setBuildPlan(e.target.value)}
-            placeholder="Tech stack, timeline, resources you have..."
-            style={{ ...inputStyle, minHeight:70, resize:"vertical" }}
-            onFocus={e => e.currentTarget.style.borderColor=T.red+"88"}
-            onBlur={e => e.currentTarget.style.borderColor=T.border} />
-        </div>
-
-        {error && (
-          <p style={{ fontSize:13, color:T.red, marginBottom:16, animation:"fadeIn 0.2s ease" }}>{error}</p>
-        )}
-
-        <div
-          onClick={canSubmit ? generate : undefined}
-          style={{
-            display:"inline-block",
-            fontSize:13, fontWeight:600, color:canSubmit ? T.text : T.textDim,
-            cursor:canSubmit ? "pointer" : "default",
-            borderBottom:canSubmit ? `1px solid ${T.textMuted}` : `1px solid ${T.border}`,
-            paddingBottom:2, transition:"all 0.2s ease",
-          }}
-          onMouseEnter={e => { if(canSubmit) { e.currentTarget.style.color=T.red; e.currentTarget.style.borderBottomColor=T.red; } }}
-          onMouseLeave={e => { if(canSubmit) { e.currentTarget.style.color=T.text; e.currentTarget.style.borderBottomColor=T.textMuted; } }}
-        >
-          Analyze my idea
-        </div>
-      </div>
-    );
-  }
-
-  // --- Loading ---
-  if (loading) {
-    return (
-      <div style={{ animation:"fadeUp 0.3s ease", maxWidth:580, padding:"80px 0" }}>
-        <p style={{ fontFamily:"DM Serif Display, serif", fontSize:22, fontWeight:400, marginBottom:12 }}>
-          Analyzing...
-        </p>
-        <p style={{ fontSize:14, color:T.textMuted, lineHeight:1.7 }}>
-          Researching market size, competitors, costs, and building your plan.
-        </p>
-        <div style={{ marginTop:24, height:1, background:T.border, position:"relative", overflow:"hidden" }}>
-          <div style={{
-            position:"absolute", top:0, left:0, height:"100%", width:"30%",
-            background:T.red, borderRadius:1,
-            animation:"slideLoading 1.4s ease infinite",
-          }} />
-        </div>
-        <style>{`@keyframes slideLoading { 0%{left:-30%} 100%{left:100%} }`}</style>
-      </div>
-    );
-  }
-
-  // --- Slideshow ---
-  const slide = slides[currentSlide];
-  const total = slides.length;
-
-  return (
-    <div style={{ animation:"fadeUp 0.3s ease", maxWidth:620 }}>
-      {/* Counter + text nav */}
-      <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:32 }}>
-        <p style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:T.textDim }}>
-          {String(currentSlide + 1).padStart(2,"0")} / {String(total).padStart(2,"0")}
-        </p>
-        <div style={{ display:"flex", gap:20 }}>
-          <span
-            onClick={() => currentSlide > 0 && setCurrentSlide(currentSlide - 1)}
-            style={{
-              fontSize:12, color:currentSlide > 0 ? T.textMuted : T.border,
-              cursor:currentSlide > 0 ? "pointer" : "default",
-              transition:"color 0.15s", userSelect:"none",
-            }}
-            onMouseEnter={e => { if(currentSlide > 0) e.currentTarget.style.color=T.text; }}
-            onMouseLeave={e => { if(currentSlide > 0) e.currentTarget.style.color=T.textMuted; }}
-          >Previous</span>
-          <span
-            onClick={() => currentSlide < total - 1 && setCurrentSlide(currentSlide + 1)}
-            style={{
-              fontSize:12, color:currentSlide < total - 1 ? T.textMuted : T.border,
-              cursor:currentSlide < total - 1 ? "pointer" : "default",
-              transition:"color 0.15s", userSelect:"none",
-            }}
-            onMouseEnter={e => { if(currentSlide < total - 1) e.currentTarget.style.color=T.text; }}
-            onMouseLeave={e => { if(currentSlide < total - 1) e.currentTarget.style.color=T.textMuted; }}
-          >Next</span>
-        </div>
-      </div>
-
-      {/* Progress lines */}
-      <div style={{ display:"flex", gap:6, marginBottom:44 }}>
-        {slides.map((_, i) => (
-          <div key={i} onClick={() => setCurrentSlide(i)} style={{
-            flex:1, height:2, cursor:"pointer",
-            background: i <= currentSlide ? T.text : T.border,
-            transition:"background 0.3s ease",
-          }} />
-        ))}
-      </div>
-
-      {/* Slide content */}
-      <div key={currentSlide} style={{ animation:"fadeUp 0.25s ease" }}>
-        <p style={{ fontSize:11, color:T.textDim, fontStyle:"italic", letterSpacing:"0.02em", marginBottom:10 }}>
-          {slide.subtitle}
-        </p>
-        <h2 style={{
-          fontFamily:"DM Serif Display, serif", fontSize:30, fontWeight:400,
-          letterSpacing:"-0.02em", lineHeight:1.2, marginBottom:32,
-        }}>
-          {slide.title}
-        </h2>
-
-        <div>
-          {slide.points.map((point, pi) => (
-            <div key={pi} style={{
-              padding:"14px 0",
-              borderBottom: pi < slide.points.length - 1 ? `1px solid ${T.border}` : "none",
-              animation:`fadeUp 0.2s ease ${pi * 0.05}s both`,
-            }}>
-              <p style={{ fontSize:14, color:T.textMuted, lineHeight:1.7 }}>{point}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Start over */}
-      <div style={{ marginTop:48, paddingTop:20, borderTop:`1px solid ${T.border}` }}>
-        <span
-          onClick={() => { setSlides(null); setCurrentSlide(0); setProblem(""); setSolution(""); setBuildPlan(""); setError(null); }}
-          style={{
-            fontSize:12, color:T.textDim, cursor:"pointer",
-            borderBottom:"1px solid transparent", paddingBottom:1, transition:"all 0.15s",
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color=T.textMuted; e.currentTarget.style.borderBottomColor=T.textMuted; }}
-          onMouseLeave={e => { e.currentTarget.style.color=T.textDim; e.currentTarget.style.borderBottomColor="transparent"; }}
-        >Start over with a new idea</span>
-      </div>
-    </div>
-  );
-}
 function SkillsToLearn() {
   const [expandedSkill, setExpandedSkill] = useState(null);
   const [completedSteps, setCompletedSteps] = useState({});
@@ -2265,154 +1934,229 @@ function SkillsToLearn() {
 
   const skills = [
     {
-      id: "landing-page",
-      title: "Build a Landing Page",
-      time: "30 minutes",
-      why: "A landing page is the fastest way to make your idea real. It forces you to articulate your value proposition in one sentence, gives you a URL to share, and lets you start collecting interest before you write a single line of product code.",
-      steps: [
-        {
-          title: "Write your one-liner",
-          detail: "Before touching code, write one sentence that explains what you're building and who it's for. This becomes your headline. If you can't explain it in one sentence, the idea isn't clear enough yet. Example: 'Automated invoicing for freelancers who hate chasing payments.'"
-        },
-        {
-          title: "Set up a blank project",
-          detail: "Create an index.html file. Add the HTML5 boilerplate, link a style.css file, and set a max-width container at 720px centered on the page. Use a system font stack so you don't need to load anything: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif."
-        },
-        {
-          title: "Build the hero section",
-          detail: "Your headline (the one-liner), a 2-sentence subheadline expanding on the value, and one call-to-action button. That's it. No navigation bar, no images, no features grid. The hero should make someone understand what you do in under 5 seconds."
-        },
-        {
-          title: "Add a waitlist form",
-          detail: "One email input, one submit button. Use Formspree.io or Google Forms as the backend - both are free and take 2 minutes to set up. Every email you collect is a signal that your idea resonates. This is your first metric."
-        },
-        {
-          title: "Add social proof or urgency",
-          detail: "Below the form, add one of these: a short testimonial quote (even from a friend who tested it), a counter ('47 people on the waitlist'), or a deadline ('Launching March 2026'). Social proof converts visitors into signups at 2-3x the rate of a bare page."
-        },
-        {
-          title: "Deploy in 60 seconds",
-          detail: "Push your files to a GitHub repo. Go to vercel.com, import the repo, and click Deploy. You now have a live URL with automatic HTTPS. Share it everywhere - in DMs, group chats, Twitter, Reddit. The point isn't perfection, it's getting real feedback from real people."
-        },
-      ],
-      resources: [
-        { label: "Vercel - free hosting, deploy from GitHub", url: "https://vercel.com" },
-        { label: "Formspree - free form backend", url: "https://formspree.io" },
-        { label: "YC: How to build a great landing page", url: "https://www.youtube.com/watch?v=_lEkD8IGkwo" },
-      ],
-    },
-    {
-      id: "mvp-vibe",
-      title: "Ship an MVP Through Vibe Coding",
+      id: "vibe-code-mvp",
+      title: "Vibe Code Your MVP",
       time: "One weekend",
-      why: "Vibe coding means describing what you want in plain English and letting AI write the code. You don't need to be a developer. Tools like Cursor, Replit Agent, and Claude let you go from idea to working prototype in hours, not weeks. The goal isn't production-grade code - it's a working thing you can put in front of users.",
+      why: "You no longer need to be a developer to ship real software. Describe what you want in plain English and AI tools like Claude Code, Cursor, Bolt, and Lovable write the code. The founders shipping fastest right now aren't the best programmers - they're the best at describing what they want and iterating quickly. This is the single highest-leverage skill a student founder can learn in 2026.",
       steps: [
         {
           title: "Define one core action",
-          detail: "Your MVP does ONE thing. Write it as a sentence: 'A user can [action] so that [result].' Everything else - settings, profiles, dashboards, onboarding - is version 2. The tighter your scope, the faster you ship. If your MVP has more than 3 screens, you're overbuilding."
+          detail: "Your MVP does ONE thing. Write it as a sentence: 'A user can [action] so that [result].' Everything else - settings, profiles, dashboards - is version 2. If your MVP has more than 3 screens, you're overbuilding."
         },
         {
-          title: "Pick your AI coding tool",
-          detail: "Cursor (cursor.com) is the best if you have some coding familiarity - it's VS Code with AI built in. Replit Agent works entirely in the browser and can scaffold full apps from a description. For pure no-code, Bolt.new generates and deploys full-stack apps from a prompt. All have free tiers."
+          title: "Pick your AI builder",
+          detail: "Lovable and Bolt.new go from a prompt to a deployed full-stack app in the browser - best if you never want to see code. Cursor and Claude Code give you a real codebase with AI doing the work - best if you want control and plan to keep building. v0 is great for UI-heavy projects. Pick one, don't tool-hop."
         },
         {
-          title: "Write a detailed spec as your prompt",
-          detail: "Don't just say 'build me a task app.' Write 2-3 paragraphs describing exactly what the user sees, what they can do, and what happens when they do it. Include the tech stack you want (Next.js + Supabase is a solid default). The better your spec, the better the output. Treat the AI like a contractor who needs a clear brief."
+          title: "Write your prompt like a product spec",
+          detail: "'Build me a task app' gives you garbage. Instead write 2-3 paragraphs: exactly what the user sees, what they can do, and what happens when they do it. Name the stack if you have a preference (Next.js + Supabase is a solid default). Treat the AI like a contractor who needs a clear brief - specificity is your superpower."
         },
         {
-          title: "Build in conversation, not in one shot",
-          detail: "Start with the database schema and auth. Get that working. Then build the main screen. Then add the core action. Test each piece before moving on. When something breaks, paste the error back into the AI and ask it to fix it. This iterative loop is faster than trying to generate everything at once."
+          title: "Build in small loops",
+          detail: "Skeleton first - layout and navigation. Then one feature at a time. Test each piece, and when something breaks, paste the error straight back in: the AI will usually spot it immediately. Each loop should take 5-15 minutes. This rhythm - prompt, review, adjust - is the whole game."
         },
         {
           title: "Add auth and a database",
-          detail: "Supabase gives you a Postgres database + auth + API for free. Set up email/password auth and one or two tables. This is the minimum for a real app - users can sign up, do the core action, and their data persists. Supabase's docs are AI-friendly, so you can paste them into your coding tool for context."
+          detail: "Supabase gives you a Postgres database, auth, and an API for free, and every AI tool knows it well. One or two tables and a sign-in flow is enough - users can do the core action and their data persists. That's a real app."
         },
         {
-          title: "Deploy and share the link",
-          detail: "Deploy to Vercel (for Next.js) or use Replit's built-in hosting. Your MVP is now live. Send the link to 10 people who match your target user. Watch them use it - where do they get confused? What do they try to do that doesn't work? Those observations are worth more than any amount of planning."
+          title: "Deploy and get it in front of 10 people",
+          detail: "Deploy to Vercel or use your builder's one-click hosting. Send the link to 10 people who match your target user and watch them use it. Where they get confused is your roadmap. Real usage beats any amount of planning."
         },
       ],
       resources: [
+        { label: "Claude Code - agentic coding from the terminal", url: "https://claude.com/claude-code" },
         { label: "Cursor - AI-first code editor", url: "https://cursor.com" },
+        { label: "Lovable - prompt to full-stack app", url: "https://lovable.dev" },
         { label: "Bolt.new - prompt to deployed app", url: "https://bolt.new" },
-        { label: "Supabase - free backend + auth + database", url: "https://supabase.com" },
-        { label: "YC: How to build your MVP", url: "https://www.youtube.com/watch?v=QRZ_l7cVzzU" },
+        { label: "v0 by Vercel - AI UI generation", url: "https://v0.dev" },
+      ],
+    },
+    {
+      id: "landing-page",
+      title: "Launch a Landing Page in an Afternoon",
+      time: "2-3 hours",
+      why: "A landing page is the fastest way to make your idea real. It forces you to articulate your value in one sentence, gives you a URL to share, and starts collecting interest before you build the product. In 2026 there is zero excuse for not having one - AI page builders get you live in minutes, so all your time goes into the message, not the code.",
+      steps: [
+        {
+          title: "Write your one-liner",
+          detail: "One sentence: what you're building and who it's for. This becomes your headline. If you can't say it in one sentence, the idea isn't clear enough yet. Example: 'Automated invoicing for freelancers who hate chasing payments.'"
+        },
+        {
+          title: "Generate the page with AI",
+          detail: "Paste your one-liner plus a short description into v0, Lovable, or Framer AI and let it generate the page. Ask for: a hero with your headline, a 2-sentence subheadline, one call-to-action, and a simple email capture. Iterate on the copy and layout in conversation until it feels right."
+        },
+        {
+          title: "Keep the hero brutal-simple",
+          detail: "Headline, subheadline, one button. No nav bar, no feature grid, no stock photos. A visitor should understand what you do in under 5 seconds. White space signals confidence."
+        },
+        {
+          title: "Wire up a waitlist",
+          detail: "Tally or Formspree gives you a free form backend in 2 minutes. Every email you collect is a signal your idea resonates - this is your first metric. Pipe signups to a Google Sheet so you can message them later."
+        },
+        {
+          title: "Add one piece of proof",
+          detail: "A short testimonial (even from a friend who tested it), a counter ('47 people on the waitlist'), or a launch date. Social proof converts visitors at 2-3x the rate of a bare page."
+        },
+        {
+          title: "Ship it and share it",
+          detail: "Deploy on Vercel or Framer's hosting - live URL with HTTPS in 60 seconds. Then share it everywhere: group chats, class Slack, Reddit, LinkedIn. The point isn't perfection, it's real feedback from real people."
+        },
+      ],
+      resources: [
+        { label: "v0 by Vercel - generate the page from a prompt", url: "https://v0.dev" },
+        { label: "Framer - AI site builder with hosting", url: "https://framer.com" },
+        { label: "Tally - free forms for the waitlist", url: "https://tally.so" },
+        { label: "Vercel - free hosting, deploy from GitHub", url: "https://vercel.com" },
       ],
     },
     {
       id: "customer-interviews",
-      title: "Validate Through Customer Interviews",
+      title: "Talk to Real Customers",
       time: "1 week",
-      why: "Most startups fail because they build something nobody wants. Customer interviews are the cheapest, fastest way to find out if your idea solves a real problem before you invest months building it. Five good conversations will teach you more than any amount of market research.",
+      why: "Most startups fail because they build something nobody wants. Five good conversations will teach you more than any amount of market research - and more than any AI can tell you, because your specific customers' pain isn't in the training data. This is still the most underrated skill in the room.",
       steps: [
         {
           title: "Write down your riskiest assumption",
-          detail: "Every idea has a core bet. 'Freelancers hate invoicing enough to pay $20/month for a tool.' That's your riskiest assumption. Your interviews should attack this directly. If this assumption is wrong, the whole idea falls apart - so validate it first, not the easy stuff."
+          detail: "Every idea has a core bet. 'Freelancers hate invoicing enough to pay $20/month for a tool.' That's your riskiest assumption, and your interviews should attack it directly. If it's wrong, the whole idea falls apart - so test it first, not the easy stuff."
         },
         {
-          title: "Find 5 people to interview",
-          detail: "You need people who actually have the problem, not friends being nice. Post in relevant Reddit communities, Slack groups, or LinkedIn. The message is simple: 'I'm researching how [target group] handles [problem]. Would you be open to a 20-minute call? Happy to send you a $10 coffee gift card as thanks.' You'll be surprised how many people say yes."
+          title: "Find 5 people who have the problem",
+          detail: "Not friends being nice - people who actually live the problem. Post in relevant Reddit communities, Discord servers, or LinkedIn: 'I'm researching how [target group] handles [problem]. Open to a 20-minute call? Happy to send a $10 coffee card as thanks.' More people say yes than you'd expect."
         },
         {
           title: "Ask about behavior, not opinions",
-          detail: "The golden rule: ask about the past, not the future. 'Walk me through the last time you dealt with [problem]' beats 'Would you use an app that...' every time. People are terrible at predicting their own behavior. But they can accurately tell you what they've actually done, what frustrated them, and what they tried."
+          detail: "The golden rule: past, not future. 'Walk me through the last time you dealt with [problem]' beats 'Would you use an app that...' every time. People are terrible at predicting their own behavior but accurate about what they've actually done and what frustrated them."
         },
         {
-          title: "Master the follow-up question",
-          detail: "When someone says something interesting, don't move to the next question. Go deeper. 'Why was that frustrating?' 'What did you do next?' 'How much time did that take?' 'Have you tried to solve it?' The best insights come from the third or fourth follow-up, not the initial answer. Silence is also a tool - pause and let them fill it."
+          title: "Go deeper with follow-ups",
+          detail: "When someone says something interesting, don't move on. 'Why was that frustrating?' 'What did you do next?' 'How much time did that take?' The best insights come from the third or fourth follow-up. Silence is a tool too - pause and let them fill it."
         },
         {
-          title: "Write down exact quotes",
-          detail: "During or right after each call, write the person's actual words, not your interpretation. 'I spend 3 hours every Friday chasing late invoices' is data. 'They seem frustrated with invoicing' is opinion. Exact quotes become your marketing copy, your pitch deck stats, and your feature priorities."
+          title: "Record and transcribe",
+          detail: "With permission, record the call and run it through an AI transcript (Granola, Otter, or just upload to Claude). Then pull exact quotes - 'I spend 3 hours every Friday chasing late invoices' is data; 'they seem frustrated' is opinion. Exact quotes become your marketing copy and pitch deck stats."
         },
         {
           title: "Find the pattern across all 5",
-          detail: "After 5 interviews, lay out your quotes and look for repeats. If 4 out of 5 people describe the same frustration in similar words, you've found a real problem. If everyone describes a different pain point, your target audience is too broad. If nobody seems that bothered, the problem might not be painful enough to pay to solve."
+          detail: "Lay out your quotes and look for repeats. If 4 of 5 people describe the same frustration in similar words, you've found a real problem. If everyone names a different pain, your target is too broad. If nobody's that bothered, the problem may not be painful enough to pay for."
         },
       ],
       resources: [
         { label: "The Mom Test - the essential book on customer interviews", url: "https://www.momtestbook.com" },
         { label: "YC: How to talk to users", url: "https://www.youtube.com/watch?v=MT4Ig2uqjTc" },
-        { label: "Lenny Rachitsky: questions to ask in user interviews", url: "https://www.lennysnewsletter.com/p/my-favorite-user-interview-questions" },
+        { label: "Granola - AI meeting notes", url: "https://granola.ai" },
       ],
     },
     {
-      id: "vibe-coding",
-      title: "Vibe Coding",
-      time: "2-3 hours",
-      why: "Vibe coding is the art of building software by describing what you want in natural language and letting AI write the code. You don't need a CS degree or years of programming experience. If you can clearly describe a problem and iterate on feedback, you can build real software. This skill turns non-technical founders into builders.",
+      id: "ai-agents",
+      title: "Automate Your Business with AI Agents",
+      time: "A few evenings",
+      why: "The newest founder superpower: AI agents that do repetitive work for you while you sleep. Lead follow-ups, content repurposing, customer support triage, research - a solo student founder with a few good automations operates like a team of five. Learning to build them takes an evening, not a semester.",
       steps: [
         {
-          title: "Understand the mindset",
-          detail: "Vibe coding isn't about learning syntax - it's about learning to communicate with AI precisely. Think of yourself as a creative director, not a developer. You describe the vision, the AI writes the code, and you evaluate the output. Your job is taste, direction, and knowing when something looks right. The better you get at describing what you want, the faster you build."
+          title: "List your repetitive tasks",
+          detail: "Spend a week noticing everything you do more than twice: answering the same DMs, copying data between tools, posting the same content to three platforms, chasing people for responses. Each one is an automation candidate. Rank by minutes-per-week wasted."
         },
         {
-          title: "Choose your environment",
-          detail: "Start with one tool and stick with it. Claude is great for generating components and logic from conversation. Cursor gives you a full IDE with AI built in - perfect if you want to see and tweak the code. Replit Agent and Bolt.new let you go from prompt to deployed app without ever touching a terminal. Lovable and v0 are solid for UI-heavy projects. Pick based on your comfort level."
+          title: "Start with one no-code automation",
+          detail: "Zapier or Make connects your tools with triggers and actions - 'when someone fills my Tally form, add them to a sheet and send a welcome email.' Build your first one in 20 minutes. This teaches you the trigger-action mental model everything else builds on."
         },
         {
-          title: "Write prompts like a product spec",
-          detail: "The #1 mistake is being too vague. 'Build me a dashboard' gives you garbage. Instead, write: 'Build a dashboard with a sidebar nav on the left (Home, Projects, Settings). The main area shows a grid of project cards - each card has a title, status badge (active/paused/completed), and a last-updated date. Use a clean, minimal design with a white background and subtle gray borders.' Specificity is your superpower."
+          title: "Level up to n8n for real agents",
+          detail: "n8n is the step beyond Zapier: visual workflows with actual AI steps in the middle. 'New signup, then AI writes a personalized welcome referencing their answers, sends it, and logs to the CRM.' Self-hostable and free to start. This is where automation becomes an agent."
         },
         {
-          title: "Iterate in small loops",
-          detail: "Don't try to build everything in one prompt. Start with the skeleton - layout and navigation. Then add one feature at a time. Test it, see what breaks, paste the error back in. Each loop should take 5-15 minutes. This rhythm - prompt, review, adjust - is the core of vibe coding. You'll build intuition for what the AI handles well and where you need to guide it."
+          title: "Give an AI a recurring job",
+          detail: "Use Claude or ChatGPT with a standing prompt for weekly work: summarize your community's activity, draft your newsletter from bullet points, turn one long post into five short ones. Save the prompt that works and reuse it - same input format, same output format, every week."
         },
         {
-          title: "Learn to debug by describing",
-          detail: "When something breaks (and it will), don't panic. Copy the error message and paste it back to the AI with context: 'I'm getting this error when I click the submit button. Here's my current code.' The AI will usually spot the issue immediately. Over time, you'll start recognizing common patterns - missing imports, wrong variable names, async issues - and fix them faster."
+          title: "Automate your inbox and scheduling",
+          detail: "Connect your email and calendar to an AI assistant layer (many tools do this now - even Zapier has agents). Auto-draft replies to common questions, auto-schedule intro calls. You approve; it does the typing."
         },
         {
-          title: "Build your prompt library",
-          detail: "Save prompts that work well. 'Add a responsive nav bar with mobile hamburger menu,' 'Create a Supabase auth flow with email/password,' 'Build a settings page with a form that saves to the database' - these become reusable building blocks. The best vibe coders have a personal library of battle-tested prompts they remix for every project."
+          title: "Measure the hours you got back",
+          detail: "Keep a running list: automation, minutes saved per week. When one saves you an hour a week, tell people about it - 'how I automated X' content performs absurdly well and feeds your build-in-public pipeline."
         },
       ],
       resources: [
-        { label: "Cursor - AI-first code editor", url: "https://cursor.com" },
-        { label: "Claude - build with conversation", url: "https://claude.ai" },
-        { label: "Bolt.new - prompt to deployed app", url: "https://bolt.new" },
-        { label: "Replit - collaborative AI coding in the browser", url: "https://replit.com" },
-        { label: "v0 by Vercel - AI UI generation", url: "https://v0.dev" },
+        { label: "n8n - visual AI workflow automation", url: "https://n8n.io" },
+        { label: "Zapier - connect your apps, no code", url: "https://zapier.com" },
+        { label: "Make - visual automation platform", url: "https://make.com" },
+        { label: "Claude - your always-on operations intern", url: "https://claude.ai" },
+      ],
+    },
+    {
+      id: "build-in-public",
+      title: "Build in Public",
+      time: "30 min/day, ongoing",
+      why: "Your journey is content. Documenting what you're building - the wins, the flops, the numbers - compounds into an audience that becomes your waitlist, your first customers, and your network. Students have an unfair advantage here: people love rooting for a college kid building something real.",
+      steps: [
+        {
+          title: "Pick one platform and commit",
+          detail: "LinkedIn if your customers are professionals, X if they're tech/startup people, TikTok or Reels if they're consumers. One platform done daily beats three done badly. You can cross-post later once one is working."
+        },
+        {
+          title: "Document, don't create",
+          detail: "You don't need content ideas - you need to narrate what you already did today. 'Shipped the waitlist page, here's the before/after.' 'First customer call today, here's what surprised me.' 'Revenue this month: $47. Here's the breakdown.' Screenshots and specifics beat polish."
+        },
+        {
+          title: "Share real numbers",
+          detail: "Numbers are the cheat code: signups, revenue, users, even failures ('spent $50 on ads, got 0 customers, here's why'). Specificity builds trust and makes posts shareable. The posts that feel scariest to publish perform best."
+        },
+        {
+          title: "Post consistently for 30 days",
+          detail: "One post a day for a month, no skipping. The first 10 will feel like shouting into the void - that's normal. The algorithm and the audience both reward consistency. Batch-write on Sunday if daily feels heavy; Typefully or Buffer schedules them."
+        },
+        {
+          title: "Engage 15 minutes a day",
+          detail: "Reply to every comment, and leave thoughtful comments on 5 bigger accounts in your niche daily. Comments are how small accounts get discovered. Genuine beats clever."
+        },
+        {
+          title: "Funnel attention somewhere you own",
+          detail: "Put your landing page link in your bio and end posts with a soft ask ('waitlist in bio'). Followers you can't reach are vanity; an email list is an asset. Even 100 emails of people who care is a launch audience."
+        },
+      ],
+      resources: [
+        { label: "Typefully - write and schedule posts", url: "https://typefully.com" },
+        { label: "Buffer - schedule across platforms", url: "https://buffer.com" },
+        { label: "CapCut - fast short-form video editing", url: "https://capcut.com" },
+      ],
+    },
+    {
+      id: "first-100",
+      title: "Get Your First 100 Users",
+      time: "2-4 weeks",
+      why: "The gap between 0 and 100 users is where most projects die - and it's crossed with unscalable, slightly uncomfortable manual work, not ads or virality. 100 real users means real feedback, real retention data, and a real story for your pitch deck. Here's the playbook.",
+      steps: [
+        {
+          title: "Write down exactly who user #1 is",
+          detail: "Not 'students' - 'sophomores who sell clothes on Depop and hate doing their own product photos.' The tighter the definition, the more obvious it becomes where they hang out and what to say to them."
+        },
+        {
+          title: "Go where they already are",
+          detail: "List 5 places your exact user congregates: subreddits, Discord servers, campus clubs, GroupMe chats, niche Facebook groups. Join, contribute genuinely for a week, then share what you built as 'I made this thing for people like us' - not as an ad."
+        },
+        {
+          title: "Do 25 direct outreaches",
+          detail: "DM 25 people who visibly have the problem (they posted about it, they're in the community). Personal, short, no pitch: 'Saw your post about X - I built something that might help. Want a free account in exchange for brutal feedback?' Expect a 20-40% response when it's genuinely relevant."
+        },
+        {
+          title: "Launch somewhere small first",
+          detail: "Before Product Hunt, launch to your campus: club Slacks, class group chats, a poster with a QR code, a table in the student center. A campus is a dense, reachable market of early adopters. Then do Product Hunt once you've fixed what the first 30 users complained about."
+        },
+        {
+          title: "Onboard the first 30 personally",
+          detail: "Text or call every single early user. Walk them through it. Watch them use it on a screen share. This feels absurdly unscalable - that's the point. You're buying the insights that make the product good enough to grow on its own."
+        },
+        {
+          title: "Track retention, not just signups",
+          detail: "Set up PostHog (free) and watch one number: how many users come back in week 2. 100 signups with 5 returning is a leaky bucket - fix the product before pouring more in. 40%+ returning means it's time to scale what's working."
+        },
+      ],
+      resources: [
+        { label: "YC: How to get your first customers", url: "https://www.youtube.com/watch?v=hyYCn_kAngI" },
+        { label: "PostHog - free product analytics", url: "https://posthog.com" },
+        { label: "Product Hunt - launch platform", url: "https://producthunt.com" },
       ],
     },
   ];
@@ -2734,32 +2478,89 @@ function PitchDeckResources() {
     },
   ];
 
+  const [idea, setIdea] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const buildGammaPrompt = () => {
+    const what = idea.trim() || "[describe your startup here]";
+    return "Create a seed-stage investor pitch deck for the following startup: " + what + "\n\n"
+      + "Use exactly this slide structure, in this order:\n"
+      + "1. Cover - company name and a single concrete one-liner. No mission statements.\n"
+      + "2. The Problem - one specific painful problem, quantified, told through the customer's eyes.\n"
+      + "3. Our Solution - lead with the outcome, connect it directly to the problem, suggest a product visual.\n"
+      + "4. Why Now - the external shifts (technology, behavior, regulation) that make this the right moment.\n"
+      + "5. Market Size - bottom-up math (number of target customers x realistic price), with a clear starting wedge.\n"
+      + "6. Competition - a 2x2 positioning matrix with axes where we win, including 'do nothing' as a competitor.\n"
+      + "7. Traction - strongest available proof people want this, framed with growth rates where possible.\n"
+      + "8. Go-to-Market - one concrete first channel described in depth, not five channels in generalities.\n"
+      + "9. Business Model - who pays, how much, how often. Keep it understandable in 10 seconds.\n"
+      + "10. Team - one impressive line per person and why we are the ones to build this.\n"
+      + "11. The Ask - a specific amount, what it unlocks, and 2-3 milestones it buys.\n\n"
+      + "Design: dark background, clean modern typography, lots of white space, minimal text per slide (investors skim). Confident, direct tone. No jargon, no buzzwords.";
+  };
+
+  const handleGamma = async () => {
+    try { await navigator.clipboard.writeText(buildGammaPrompt()); } catch (e) { console.error("Clipboard failed:", e); }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 4000);
+    window.open("https://gamma.app/create", "_blank");
+  };
+
   return (
     <div style={{ animation: "fadeUp 0.3s ease", maxWidth: 640 }}>
       {/* Intro */}
-      <div style={{ marginBottom: 36, display: "flex", gap: 24, alignItems: "flex-start" }}>
-        <p style={{ fontSize: 14, color: T.textMuted, lineHeight: 1.8, flex: 1 }}>
-          A pitch deck is a sequence of slides that tell a story: there's a painful problem, you have a solution, the timing is right, the market is big enough, you know who you're up against, people already want it, you have a plan to reach them, you know how to make money, and your team is the one to build it. Each slide below breaks down what belongs on it, what doesn't, and what good looks like.
+      <p style={{ fontSize: 14, color: T.textMuted, lineHeight: 1.8, marginBottom: 24 }}>
+        A pitch deck is a sequence of slides that tell a story: there's a painful problem, you have a solution, the timing is right, the market is big enough, you know who you're up against, people already want it, you have a plan to reach them, you know how to make money, and your team is the one to build it. Each slide below breaks down what belongs on it, what doesn't, and what good looks like.
+      </p>
+
+      {/* Gamma deck generator */}
+      <div style={{
+        padding: "22px 24px", borderRadius: 14, marginBottom: 36,
+        background: "linear-gradient(135deg, rgba(139,92,246,0.08), rgba(109,40,217,0.04))",
+        border: "1px solid rgba(139,92,246,0.25)",
+      }}>
+        <p style={{ fontFamily: "DM Serif Display, serif", fontSize: 18, fontWeight: 400, marginBottom: 4 }}>
+          Generate your deck with Gamma
         </p>
-        <button
-          onClick={() => window.open("https://gamma.app", "_blank")}
+        <p style={{ fontSize: 12, color: T.textMuted, marginBottom: 14, lineHeight: 1.6 }}>
+          Describe what you're building. We'll turn it into a full deck prompt using the 11-slide structure below, copy it to your clipboard, and open Gamma - just paste it in.
+        </p>
+        <textarea
+          value={idea}
+          onChange={e => setIdea(e.target.value)}
+          placeholder="e.g. An app that matches college students with same-day odd jobs from local homeowners - students earn cash between classes, homeowners get help fast."
+          rows={3}
           style={{
-            flexShrink: 0, padding: "12px 20px", borderRadius: 10,
-            fontSize: 13, fontWeight: 700, fontFamily: "Inter, DM Sans, sans-serif",
-            background: "linear-gradient(135deg, #8B5CF6, #6D28D9)",
-            color: "#fff", border: "none", cursor: "pointer",
-            boxShadow: "0 4px 20px rgba(139,92,246,0.25)",
-            transition: "all 0.2s ease", lineHeight: 1.4,
-            textAlign: "center", whiteSpace: "nowrap",
+            width: "100%", padding: "12px 14px", borderRadius: 10, resize: "vertical",
+            background: T.bgInput, border: `1px solid ${T.border}`, color: T.text,
+            fontSize: 13, fontFamily: "Inter, sans-serif", lineHeight: 1.6, outline: "none",
+            boxSizing: "border-box", marginBottom: 12,
           }}
-          onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 28px rgba(139,92,246,0.35)"; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(139,92,246,0.25)"; }}
-        >
-          Build with Gamma ->
-          <span style={{ display: "block", fontSize: 10, fontWeight: 400, opacity: 0.75, marginTop: 2 }}>
-            Auto-generate your deck
-          </span>
-        </button>
+          onFocus={e => e.currentTarget.style.borderColor = "#8B5CF6"}
+          onBlur={e => e.currentTarget.style.borderColor = T.border}
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+          <button
+            onClick={handleGamma}
+            style={{
+              padding: "11px 22px", borderRadius: 10,
+              fontSize: 13, fontWeight: 700, fontFamily: "Inter, DM Sans, sans-serif",
+              background: "linear-gradient(135deg, #8B5CF6, #6D28D9)",
+              color: "#fff", border: "none", cursor: "pointer",
+              boxShadow: "0 4px 20px rgba(139,92,246,0.25)",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 28px rgba(139,92,246,0.35)"; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(139,92,246,0.25)"; }}
+          >
+            Copy Prompt & Open Gamma {"->"}
+          </button>
+          {copied && (
+            <span style={{ fontSize: 12, color: T.success, fontWeight: 600, animation: "fadeIn 0.2s ease" }}>
+              Prompt copied - paste it into Gamma's AI generator
+            </span>
+          )}
+        </div>
       </div>
 
       <div style={{ display: "grid", gap: 0 }}>
@@ -2859,12 +2660,14 @@ function FounderToolkit() {
 
   const categories = [
     {
-      title: "Design & Prototype",
+      title: "AI Assistants",
       icon: "",
-      color: "#EC4899",
+      color: "#8B5CF6",
       tools: [
-        { name: "Figma", desc: "Design interfaces collaboratively", url: "https://figma.com", tag: "Free tier" },
-        { name: "Mobbin", desc: "UI/UX design inspiration from real apps", url: "https://mobbin.com", tag: "Free tier" },
+        { name: "Claude", desc: "Thinking partner that also builds - strategy, writing, code", url: "https://claude.ai", tag: "Free tier" },
+        { name: "ChatGPT", desc: "General-purpose AI assistant with voice & vision", url: "https://chatgpt.com", tag: "Free tier" },
+        { name: "Perplexity", desc: "AI search with cited sources - research anything fast", url: "https://perplexity.ai", tag: "Free tier" },
+        { name: "NotebookLM", desc: "Turn your docs & research into an AI study partner", url: "https://notebooklm.google.com", tag: "Free" },
       ],
     },
     {
@@ -2872,11 +2675,34 @@ function FounderToolkit() {
       icon: "",
       color: "#3B82F6",
       tools: [
-        { name: "Cursor", desc: "AI-powered code editor - build 10x faster", url: "https://cursor.com", tag: "Free tier" },
+        { name: "Claude Code", desc: "Agentic AI coding - describe it, watch it get built", url: "https://claude.com/claude-code", tag: "Paid" },
+        { name: "Cursor", desc: "AI-first code editor - build 10x faster", url: "https://cursor.com", tag: "Free tier" },
+        { name: "Lovable", desc: "Prompt to full-stack app, no code required", url: "https://lovable.dev", tag: "Free tier" },
+        { name: "Bolt.new", desc: "Prompt to deployed app in the browser", url: "https://bolt.new", tag: "Free tier" },
         { name: "Vercel", desc: "Deploy websites & apps instantly", url: "https://vercel.com", tag: "Free tier" },
         { name: "Supabase", desc: "Backend, database, auth - all in one", url: "https://supabase.com", tag: "Free tier" },
-        { name: "Railway", desc: "Deploy any backend with zero config", url: "https://railway.app", tag: "Free tier" },
         { name: "GitHub", desc: "Version control & collaboration", url: "https://github.com", tag: "Free" },
+      ],
+    },
+    {
+      title: "Design & Prototype",
+      icon: "",
+      color: "#EC4899",
+      tools: [
+        { name: "Figma", desc: "Design interfaces collaboratively", url: "https://figma.com", tag: "Free tier" },
+        { name: "v0", desc: "Generate polished UI from a text prompt", url: "https://v0.dev", tag: "Free tier" },
+        { name: "Canva", desc: "Graphics, decks & social assets in minutes", url: "https://canva.com", tag: "Free tier" },
+        { name: "Mobbin", desc: "UI/UX design inspiration from real apps", url: "https://mobbin.com", tag: "Free tier" },
+      ],
+    },
+    {
+      title: "Automation & Agents",
+      icon: "",
+      color: "#F97316",
+      tools: [
+        { name: "n8n", desc: "Visual AI workflows - build agents that work for you", url: "https://n8n.io", tag: "Free tier" },
+        { name: "Zapier", desc: "Connect your apps with triggers & actions", url: "https://zapier.com", tag: "Free tier" },
+        { name: "Make", desc: "Drag-and-drop automation scenarios", url: "https://make.com", tag: "Free tier" },
       ],
     },
     {
@@ -2884,9 +2710,10 @@ function FounderToolkit() {
       icon: "",
       color: "#F59E0B",
       tools: [
-        { name: "Mailchimp", desc: "Email marketing & newsletters", url: "https://mailchimp.com", tag: "Free tier" },
-        { name: "Buffer", desc: "Schedule social media posts", url: "https://buffer.com", tag: "Free tier" },
-        { name: "Typefully", desc: "Write & schedule Twitter threads", url: "https://typefully.com", tag: "Free tier" },
+        { name: "beehiiv", desc: "Modern newsletter platform built for growth", url: "https://beehiiv.com", tag: "Free tier" },
+        { name: "Typefully", desc: "Write & schedule posts for X and LinkedIn", url: "https://typefully.com", tag: "Free tier" },
+        { name: "Buffer", desc: "Schedule social media across platforms", url: "https://buffer.com", tag: "Free tier" },
+        { name: "CapCut", desc: "Fast short-form video editing for Reels & TikTok", url: "https://capcut.com", tag: "Free tier" },
         { name: "Google Trends", desc: "Validate demand & spot trends", url: "https://trends.google.com", tag: "Free" },
       ],
     },
@@ -2895,8 +2722,19 @@ function FounderToolkit() {
       icon: "",
       color: "#10B981",
       tools: [
-        { name: "Hotjar", desc: "Heatmaps & user behavior recordings", url: "https://hotjar.com", tag: "Free tier" },
+        { name: "PostHog", desc: "Product analytics, session replay & feature flags", url: "https://posthog.com", tag: "Free tier" },
+        { name: "Microsoft Clarity", desc: "Free heatmaps & session recordings", url: "https://clarity.microsoft.com", tag: "Free" },
         { name: "Tally", desc: "Beautiful forms & surveys", url: "https://tally.so", tag: "Free" },
+      ],
+    },
+    {
+      title: "Money & Ops",
+      icon: "",
+      color: "#06B6D4",
+      tools: [
+        { name: "Stripe", desc: "Accept payments - the standard for startups", url: "https://stripe.com", tag: "Pay per use" },
+        { name: "Notion", desc: "Docs, wikis & lightweight CRM in one workspace", url: "https://notion.com", tag: "Free tier" },
+        { name: "Loom", desc: "Async video - demo your product, pitch without a meeting", url: "https://loom.com", tag: "Free tier" },
       ],
     },
   ];
