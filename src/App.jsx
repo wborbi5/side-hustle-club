@@ -1685,6 +1685,7 @@ function DashboardPage({ role, onNav }) {
             { src:"/photos/union-hall.jpg", cap:"Startup tour - Union Hall, Cincinnati" },
             { src:"/photos/workshop.png", cap:"Speaker workshops" },
             { src:"/photos/company-visit.png", cap:"Company visits" },
+            { src:"/photos/meeting.png", cap:"Packed house at a weekly meeting" },
           ].map((ph, i) => (
             <div key={ph.src} style={{ animation:`fadeUp 0.4s ease ${0.1 + i * 0.06}s both` }}>
               <div style={{
