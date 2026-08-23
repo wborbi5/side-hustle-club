@@ -205,6 +205,25 @@ const db = {
       .subscribe();
     return () => supabase.removeChannel(channel);
   },
+
+  // --- Attendance: manual roster marks (present/absent override, independent of submissions) ---
+  async getMarks(sessionId) {
+    const { data } = await supabase.from("attendance_marks").select("*").eq("session_id", sessionId);
+    return data || [];
+  },
+
+  async setMark(sessionId, profileId, present) {
+    const { data, error } = await supabase.from("attendance_marks")
+      .upsert({ session_id: sessionId, profile_id: profileId, present, marked_at: new Date().toISOString() },
+        { onConflict: "session_id,profile_id" })
+      .select().single();
+    if (error) { console.error("setMark error:", error); throw error; }
+    return data;
+  },
+
+  async clearMark(sessionId, profileId) {
+    await supabase.from("attendance_marks").delete().eq("session_id", sessionId).eq("profile_id", profileId);
+  },
 };
 
 // Short, unambiguous code for the projector screen - no 0/O/1/I/L mixups
@@ -1132,6 +1151,7 @@ function LandingPage({ onSuccess }) {
 // --- Sidebar ---
 const NAV_ITEMS = [
   { id:"dashboard", label:"Home", icon:"" },
+  { id:"recruitment", label:"Recruitment", icon:"" },
   { id:"members", label:"Members", icon:"" },
   { id:"resources", label:"Resources", icon:"" },
   { id:"attendance", label:"Attendance", icon:"" },
@@ -2109,6 +2129,107 @@ function BrowsePage({ filterRole, title, subtitle }) {
 
 function MembersPage() { return <BrowsePage filterRole="member" title="Members" subtitle="Browse and find fellow builders" />; }
 // --- Resources Page ---
+// --- Recruitment (public, no login required) ---
+const RECRUITMENT_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSde7FgG6l1bogLTy4YQFxpW9ESPxOLNjRZSJb7_SeS1zdpsQA/viewform?usp=header";
+
+const RECRUITMENT_EVENTS = [
+  { title: "Mega Fair", date: "August 30" },
+  { title: "Meet the B-Orgs", date: "August 31" },
+  { title: "SHC Info Night", date: "Tuesday, Sept 8 · 7:30–8:30pm", location: "Farmer School of Business, Room 0026" },
+];
+
+const EXEC_BOARD = [
+  { name: "Wyatt Borbi", role: "President", email: "Borbiwj@miamioh.edu", phone: "(248) 704-0190" },
+  { name: "Cris Shemo", role: "Head of Recruitment and Marketing", email: "shemoca@miamioh.edu", phone: "(216) 954-2414" },
+  { name: "Zak Amedia", role: "VP of Operations", email: "amediazz@miamioh.edu", phone: "(330) 980-5857" },
+  { name: "Vlad Gorobchuk", role: "Head of Network", email: "gorobcvy@miamioh.edu", phone: "(614) 302-8940" },
+  { name: "Luke Hoff", role: "Head of Communications", email: "hoffl@miamioh.edu", phone: "(937) 559-8525" },
+  { name: "Henry Terry", role: "Treasurer", email: "terryhr@miamioh.edu", phone: "(614) 726-0025" },
+];
+
+function telHref(phone) {
+  return `tel:+1${phone.replace(/\D/g, "")}`;
+}
+
+function RecruitmentPage() {
+  return (
+    <PageShell title="Recruitment" subtitle="Join Miami's student builder community">
+      {/* Apply Now CTA */}
+      <div style={{
+        textAlign:"center", padding:"40px 24px", marginBottom:40, borderRadius:16,
+        background:T.bgCard, border:`1px solid ${T.border}`, animation:"fadeUp 0.3s ease",
+      }}>
+        <p style={{ fontFamily:"DM Serif Display, serif", fontSize:22, fontWeight:400, marginBottom:16 }}>
+          Ready to build with us?
+        </p>
+        <button onClick={() => window.open(RECRUITMENT_FORM_URL, "_blank")} style={{
+          padding:"18px 48px", minHeight:44, borderRadius:12, border:"none",
+          background:T.red, color:"#fff", fontFamily:"Inter", fontSize:16, fontWeight:700,
+          cursor:"pointer", boxShadow:`0 8px 24px ${T.redGlow}`,
+        }}>
+          Apply Now
+        </button>
+      </div>
+
+      {/* Recruitment Events */}
+      <div style={{ marginBottom:40, animation:"fadeUp 0.3s ease 0.05s both" }}>
+        <p style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:T.textDim, marginBottom:16 }}>
+          Recruitment Events
+        </p>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))", gap:16 }}>
+          {RECRUITMENT_EVENTS.map((ev, i) => (
+            <div key={ev.title} style={{
+              padding:20, borderRadius:14, background:T.bgCard, border:`1px solid ${T.border}`,
+              animation:`fadeUp 0.3s ease ${0.05 + i * 0.05}s both`,
+            }}>
+              <h3 style={{ fontFamily:"DM Serif Display, serif", fontSize:18, fontWeight:400, marginBottom:6, letterSpacing:"-0.01em" }}>{ev.title}</h3>
+              <p style={{ fontSize:13, color:T.textMuted }}>{ev.date}</p>
+              {ev.location && <p style={{ fontSize:12, color:T.textDim, marginTop:4 }}>{ev.location}</p>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Exec Board Directory */}
+      <div style={{ animation:"fadeUp 0.3s ease 0.1s both" }}>
+        <p style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:T.textDim, marginBottom:16 }}>
+          Exec Board
+        </p>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(250px, 1fr))", gap:14 }}>
+          {EXEC_BOARD.map((p) => (
+            <div key={p.name} style={{
+              padding:18, borderRadius:14, background:T.bgCard, border:`1px solid ${T.border}`,
+              display:"flex", flexDirection:"column", gap:12,
+            }}>
+              <div>
+                <p style={{ fontFamily:"DM Serif Display, serif", fontSize:16, fontWeight:400 }}>{p.name}</p>
+                <p style={{ fontSize:12, color:T.textMuted, marginTop:2 }}>{p.role}</p>
+              </div>
+              <div style={{ display:"flex", gap:8 }}>
+                <a href={`mailto:${p.email}`} style={{
+                  flex:1, display:"flex", alignItems:"center", justifyContent:"center",
+                  padding:"9px 10px", minHeight:44, borderRadius:8, border:`1px solid ${T.border}`,
+                  color:T.text, fontFamily:"Inter", fontSize:12, fontWeight:600, textDecoration:"none",
+                }}>
+                  Email
+                </a>
+                <a href={telHref(p.phone)} style={{
+                  flex:1, display:"flex", alignItems:"center", justifyContent:"center",
+                  padding:"9px 10px", minHeight:44, borderRadius:8, border:`1px solid ${T.red}44`,
+                  background:T.redSoft, color:T.red, fontFamily:"Inter", fontSize:12, fontWeight:600, textDecoration:"none",
+                }}>
+                  Call
+                </a>
+              </div>
+              <p style={{ fontSize:11, color:T.textDim }}>{p.phone}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </PageShell>
+  );
+}
+
 function ResourcesPage() {
   const [activeTab, setActiveTab] = useState("skills");
 
@@ -3052,6 +3173,113 @@ function PostItBoard({ submissions }) {
 }
 
 // Exec view: start/end the session, display the code, watch the board fill in live.
+// Exec-only manual roster: full member/mentor list cross-referenced against
+// who submitted a post-it (soft name match, same lower(trim()) rule as the
+// duplicate-submission index - there's no FK between profiles and
+// submissions) with a Present/Absent override independent of submissions.
+function AttendanceRoster({ sessionId, submissions }) {
+  const [profiles, setProfiles] = useState([]);
+  const [marks, setMarks] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  const [busyId, setBusyId] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const [pr, mk] = await Promise.all([db.getProfiles(), db.getMarks(sessionId)]);
+      setProfiles(pr);
+      setMarks(mk);
+      setLoaded(true);
+    })();
+  }, [sessionId]);
+
+  const norm = s => (s || "").toLowerCase().trim();
+  const submittedNames = new Set(submissions.map(s => norm(s.member_name)));
+  const markByProfile = Object.fromEntries(marks.map(m => [m.profile_id, m.present]));
+
+  const toggle = async (profileId, present) => {
+    setBusyId(profileId);
+    try {
+      const updated = await db.setMark(sessionId, profileId, present);
+      setMarks(prev => [...prev.filter(m => m.profile_id !== profileId), updated]);
+    } catch (e) { console.error(e); }
+    setBusyId(null);
+  };
+
+  const clear = async (profileId) => {
+    setBusyId(profileId);
+    try {
+      await db.clearMark(sessionId, profileId);
+      setMarks(prev => prev.filter(m => m.profile_id !== profileId));
+    } catch (e) { console.error(e); }
+    setBusyId(null);
+  };
+
+  if (!loaded) return null;
+
+  return (
+    <div style={{ marginTop:36 }}>
+      <p style={{ fontSize:11, fontWeight:600, letterSpacing:"0.08em", textTransform:"uppercase", color:T.textDim, marginBottom:14 }}>
+        Roster - manual check
+      </p>
+      <div style={{ display:"grid", gap:8 }}>
+        {profiles.map(p => {
+          const submitted = submittedNames.has(norm(p.name));
+          const override = markByProfile[p.id]; // true | false | undefined
+          const busy = busyId === p.id;
+          return (
+            <div key={p.id} style={{
+              display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap",
+              padding:"12px 16px", borderRadius:12, background:T.bgCard, border:`1px solid ${T.border}`,
+            }}>
+              <div style={{ minWidth:0 }}>
+                <p style={{ fontSize:14, fontWeight:600, color:T.text }}>{p.name}</p>
+                <p style={{ fontSize:11, color: submitted ? T.success : T.textDim, marginTop:2 }}>
+                  {submitted ? "Submitted a post-it" : "No submission"}
+                </p>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+                {override !== undefined && (
+                  <span style={{
+                    fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.04em",
+                    padding:"3px 8px", borderRadius:6,
+                    color: override ? T.success : T.red,
+                    background: (override ? T.success : T.red) + "15",
+                    border:`1px solid ${(override ? T.success : T.red)}33`,
+                  }}>
+                    {override ? "Marked Present" : "Marked Absent"}
+                  </span>
+                )}
+                <button disabled={busy} onClick={() => toggle(p.id, true)} style={{
+                  padding:"7px 12px", minHeight:36, borderRadius:8, fontSize:12, fontWeight:600, fontFamily:"Inter",
+                  border:`1px solid ${override === true ? T.success : T.border}`,
+                  background: override === true ? T.success+"15" : "none",
+                  color: override === true ? T.success : T.textMuted,
+                  cursor: busy ? "default" : "pointer", opacity: busy ? 0.5 : 1,
+                }}>Present</button>
+                <button disabled={busy} onClick={() => toggle(p.id, false)} style={{
+                  padding:"7px 12px", minHeight:36, borderRadius:8, fontSize:12, fontWeight:600, fontFamily:"Inter",
+                  border:`1px solid ${override === false ? T.red : T.border}`,
+                  background: override === false ? T.redSoft : "none",
+                  color: override === false ? T.red : T.textMuted,
+                  cursor: busy ? "default" : "pointer", opacity: busy ? 0.5 : 1,
+                }}>Absent</button>
+                {override !== undefined && (
+                  <button disabled={busy} onClick={() => clear(p.id)} style={{
+                    padding:"7px 10px", minHeight:36, borderRadius:8, fontSize:12, fontFamily:"Inter",
+                    border:"none", background:"none", color:T.textDim,
+                    cursor: busy ? "default" : "pointer", opacity: busy ? 0.5 : 1,
+                  }}>Clear</button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        {profiles.length === 0 && <PlaceholderCard text="No member profiles yet." />}
+      </div>
+    </div>
+  );
+}
+
 function AttendanceAdminView() {
   const [session, setSession] = useState(null);
   const [submissions, setSubmissions] = useState([]);
@@ -3141,6 +3369,7 @@ function AttendanceAdminView() {
         {submissions.length} checked in
       </p>
       <PostItBoard submissions={submissions} />
+      <AttendanceRoster sessionId={session.id} submissions={submissions} />
     </PageShell>
   );
 }
@@ -3608,6 +3837,7 @@ function AppShell({ role, profile, onLogout, onProfileUpdate }) {
   const [editing, setEditing] = useState(false);
   const pages = {
     dashboard: <DashboardPage role={role} onNav={setPage} />,
+    recruitment: <RecruitmentPage />,
     members: <MembersPage />,
     resources: <ResourcesPage />,
     attendance: <AttendancePage role={role} />,
