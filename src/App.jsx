@@ -72,6 +72,18 @@ function getStoredRole() { try { return localStorage.getItem("shc-role"); } catc
 function setStoredRole(r) { try { localStorage.setItem("shc-role", r); } catch {} }
 function clearStoredRole() { try { localStorage.removeItem("shc-role"); } catch {} }
 
+// Reactive breakpoint check (window.innerWidth alone doesn't update on resize/rotation)
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => typeof window !== "undefined" ? window.matchMedia(query).matches : false);
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const handler = (e) => setMatches(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, [query]);
+  return matches;
+}
+
 
 const db = {
   // --- Auth / Codes ---
@@ -139,7 +151,69 @@ const db = {
   async deletePost(id) {
     await supabase.from("posts").delete().eq("id", id);
   },
+
+  // --- Attendance ---
+  async getActiveSession() {
+    const { data } = await supabase.from("attendance_sessions").select("*")
+      .eq("active", true).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    return data || null;
+  },
+
+  async startSession(code) {
+    // Only one session should be live at a time
+    await supabase.from("attendance_sessions").update({ active: false, ended_at: new Date().toISOString() }).eq("active", true);
+    const { data, error } = await supabase.from("attendance_sessions").insert({ code }).select().single();
+    if (error) { console.error("startSession error:", error); throw error; }
+    return data;
+  },
+
+  async endSession(id) {
+    await supabase.from("attendance_sessions").update({ active: false, ended_at: new Date().toISOString() }).eq("id", id);
+  },
+
+  async findSessionByCode(code) {
+    const { data } = await supabase.from("attendance_sessions").select("*")
+      .eq("active", true).eq("code", code.trim().toUpperCase()).maybeSingle();
+    return data || null;
+  },
+
+  async getSubmissions(sessionId) {
+    const { data } = await supabase.from("attendance_submissions").select("*")
+      .eq("session_id", sessionId).order("created_at", { ascending: true });
+    return data || [];
+  },
+
+  // Returns { ok: true, submission } or { ok: false, reason: "duplicate" | "error" }
+  async submitPostIt(sessionId, memberName, content) {
+    const { data, error } = await supabase.from("attendance_submissions").insert({
+      session_id: sessionId, member_name: memberName.trim(), content: content.trim(),
+    }).select().single();
+    if (error) {
+      if (error.code === "23505") return { ok: false, reason: "duplicate" };
+      console.error("submitPostIt error:", error);
+      return { ok: false, reason: "error" };
+    }
+    return { ok: true, submission: data };
+  },
+
+  subscribeToSubmissions(sessionId, onInsert) {
+    const channel = supabase.channel(`attendance-${sessionId}`)
+      .on("postgres_changes", {
+        event: "INSERT", schema: "public", table: "attendance_submissions",
+        filter: `session_id=eq.${sessionId}`,
+      }, (payload) => onInsert(payload.new))
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  },
 };
+
+// Short, unambiguous code for the projector screen - no 0/O/1/I/L mixups
+function generateAttendanceCode(length = 5) {
+  const chars = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+  let out = "";
+  for (let i = 0; i < length; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
@@ -181,6 +255,8 @@ const GLOBAL_CSS = `
   @keyframes glow { 0%,100%{box-shadow:0 0 20px ${T.redGlow}} 50%{box-shadow:0 0 40px ${T.redGlow}} }
   @keyframes scaleIn { from{opacity:0;transform:scale(0.9)} to{opacity:1;transform:scale(1)} }
   @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+  @media (max-width: 768px) { .admin-tabs, .resource-tabs { flex-wrap: wrap; } }
 
   .shake { animation: shake 0.4s ease; }
   input:focus, textarea:focus { outline:none; }
@@ -563,6 +639,7 @@ function LandingPage({ onSuccess }) {
   const inputsRef = useRef([]);
   const triedRef = useRef(false);
   const intervalRef = useRef(null);
+  const isDesktop = useMediaQuery("(min-width: 1025px)");
 
   // Access code entry is only reachable at /#admin - everyone else goes straight in
   const adminMode = typeof window !== "undefined" && window.location.hash === "#admin";
@@ -702,7 +779,7 @@ function LandingPage({ onSuccess }) {
       {/* Hero Grid */}
       <main style={{
         display: "grid",
-        gridTemplateColumns: window.innerWidth > 1024 ? "1.2fr 0.8fr" : "1fr",
+        gridTemplateColumns: isDesktop ? "1.2fr 0.8fr" : "1fr",
         minHeight: "100vh", paddingTop: 80,
         maxWidth: 1440, margin: "0 auto", position: "relative",
         opacity: isSuccess ? 0 : 1,
@@ -711,9 +788,9 @@ function LandingPage({ onSuccess }) {
       }}>
         {/* Left: Hero Content */}
         <div style={{
-          padding: window.innerWidth > 1024 ? "4rem 0 4rem 3rem" : "6rem 2rem",
+          padding: isDesktop ? "4rem 0 4rem 3rem" : "6rem 1.5rem",
           display: "flex", flexDirection: "column", justifyContent: "center",
-          borderRight: window.innerWidth > 1024 ? `1px solid ${lineColor}` : "none",
+          borderRight: isDesktop ? `1px solid ${lineColor}` : "none",
         }}>
           {/* Title */}
           <h1 style={{
@@ -778,7 +855,7 @@ function LandingPage({ onSuccess }) {
                   marginBottom: 16,
                   fontWeight: 400,
                 }}>Enter Access Code</p>
-                <div style={{ display: "flex", gap: 10 }}>
+                <div style={{ display: "flex", gap: isDesktop ? 10 : 8 }}>
                   {code.map((d, i) => (
                     <div key={i} style={{
                       position: "relative",
@@ -794,9 +871,9 @@ function LandingPage({ onSuccess }) {
                         onPaste={i === 0 ? handlePaste : undefined}
                         disabled={isSuccess}
                         style={{
-                          width: 44, height: 56,
+                          width: isDesktop ? 44 : 38, height: isDesktop ? 56 : 50,
                           textAlign: "center",
-                          fontSize: 22,
+                          fontSize: isDesktop ? 22 : 19,
                           fontFamily: "'Inter', sans-serif",
                           fontWeight: 500,
                           background: isSuccess
@@ -862,7 +939,7 @@ function LandingPage({ onSuccess }) {
         </div>
 
         {/* Right: Member Gallery (desktop only) */}
-        {window.innerWidth > 1024 && (
+        {isDesktop && (
           <div style={{
             position: "relative",
             display: "flex", flexDirection: "column",
@@ -1057,6 +1134,7 @@ const NAV_ITEMS = [
   { id:"dashboard", label:"Home", icon:"" },
   { id:"members", label:"Members", icon:"" },
   { id:"resources", label:"Resources", icon:"" },
+  { id:"attendance", label:"Attendance", icon:"" },
   { id:"myprofile", label:"My Profile", icon:"" },
 ];
 const ADMIN_NAV = [{ id:"admin", label:"Admin Panel", icon:"" }];
@@ -1065,79 +1143,164 @@ function Sidebar({ active, onNav, role, onLogout, profileName, hasProfile }) {
   const base = hasProfile ? NAV_ITEMS : NAV_ITEMS.filter(i => i.id !== "myprofile");
   const items = role === "admin" ? [...base, ...ADMIN_NAV] : base;
   const [hovered, setHovered] = useState(null);
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close the mobile menu on any nav change so it never gets left open
+  useEffect(() => { setMenuOpen(false); }, [active]);
+
+  const handleNav = (id) => { onNav(id); setMenuOpen(false); };
+
   return (
-    <div style={{
-      width:"100%", height:56, background:T.bgCard,
-      borderBottom:`1px solid ${T.border}`,
-      display:"flex", alignItems:"center",
-      padding:"0 24px", gap:0,
-      position:"sticky", top:0, zIndex:100,
-      backdropFilter:"blur(16px)",
-      WebkitBackdropFilter:"blur(16px)",
-      animation:"fadeIn 0.4s ease",
-    }}>
-      {/* Logo */}
-      <div style={{ display:"flex", alignItems:"center", gap:9, marginRight:36, flexShrink:0 }}>
-        <Logo size={22} />
-        <span style={{ fontFamily:"DM Serif Display, serif", fontWeight:400, fontSize:15, letterSpacing:"-0.02em", color:T.text }}>Side Hustle Club</span>
-      </div>
+    <div style={{ position:"sticky", top:0, zIndex:100 }}>
+      <div style={{
+        width:"100%", height:56, background:T.bgCard,
+        borderBottom:`1px solid ${T.border}`,
+        display:"flex", alignItems:"center",
+        padding: isMobile ? "0 12px" : "0 24px", gap:0,
+        backdropFilter:"blur(16px)",
+        WebkitBackdropFilter:"blur(16px)",
+        animation:"fadeIn 0.4s ease",
+      }}>
+        {/* Logo */}
+        <div style={{ display:"flex", alignItems:"center", gap:9, marginRight: isMobile ? "auto" : 36, flexShrink:0, minWidth:0 }}>
+          <Logo size={22} />
+          <span style={{
+            fontFamily:"DM Serif Display, serif", fontWeight:400, fontSize:15, letterSpacing:"-0.02em", color:T.text,
+            whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis",
+          }}>Side Hustle Club</span>
+        </div>
 
-      {/* Nav Items */}
-      <nav style={{ display:"flex", alignItems:"center", gap:2, flex:1, height:"100%" }}>
-        {items.map((item) => {
-          const isActive = active === item.id;
-          const isHov = hovered === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onNav(item.id)}
-              onMouseEnter={() => setHovered(item.id)}
-              onMouseLeave={() => setHovered(null)}
-              style={{
-                position:"relative",
-                display:"flex", alignItems:"center",
-                padding:"0 16px", height:"100%",
-                border:"none", cursor:"pointer",
-                fontFamily:"Inter", fontSize:13.5,
-                fontWeight: isActive ? 600 : 450,
-                color: isActive ? T.text : isHov ? T.text : T.textMuted,
-                background: isHov && !isActive ? T.bgHover : "transparent",
-                borderRadius:0,
-                transition:"all 0.18s ease",
-                letterSpacing:"0.005em",
-              }}
-            >
-              {item.label}
-              {/* Active indicator - bottom line */}
-              {isActive && (
-                <div style={{
-                  position:"absolute", bottom:0, left:12, right:12,
-                  height:2, borderRadius:"2px 2px 0 0",
-                  background:T.red,
-                  animation:"scaleIn 0.2s ease",
-                }} />
-              )}
+        {/* Nav Items - desktop only */}
+        {!isMobile && (
+          <nav style={{ display:"flex", alignItems:"center", gap:2, flex:1, height:"100%" }}>
+            {items.map((item) => {
+              const isActive = active === item.id;
+              const isHov = hovered === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleNav(item.id)}
+                  onMouseEnter={() => setHovered(item.id)}
+                  onMouseLeave={() => setHovered(null)}
+                  style={{
+                    position:"relative",
+                    display:"flex", alignItems:"center",
+                    padding:"0 16px", height:"100%",
+                    border:"none", cursor:"pointer",
+                    fontFamily:"Inter", fontSize:13.5,
+                    fontWeight: isActive ? 600 : 450,
+                    color: isActive ? T.text : isHov ? T.text : T.textMuted,
+                    background: isHov && !isActive ? T.bgHover : "transparent",
+                    borderRadius:0,
+                    transition:"all 0.18s ease",
+                    letterSpacing:"0.005em",
+                  }}
+                >
+                  {item.label}
+                  {/* Active indicator - bottom line */}
+                  {isActive && (
+                    <div style={{
+                      position:"absolute", bottom:0, left:12, right:12,
+                      height:2, borderRadius:"2px 2px 0 0",
+                      background:T.red,
+                      animation:"scaleIn 0.2s ease",
+                    }} />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        )}
+
+        {/* Right side - user + exit (desktop only; mobile moves these into the dropdown) */}
+        {!isMobile && (
+          <div style={{ display:"flex", alignItems:"center", gap:14, flexShrink:0 }}>
+            <span style={{ fontSize:12, color:T.textMuted, fontFamily:"Inter", fontWeight:500 }}>
+              {profileName || <span style={{ color:T.red, fontWeight:600, textTransform:"capitalize" }}>{role}</span>}
+            </span>
+            <button onClick={onLogout} style={{
+              background:"none", border:`1px solid ${T.border}`,
+              color:T.textDim, fontSize:11, cursor:"pointer", fontFamily:"Inter",
+              padding:"5px 14px", minHeight:44, borderRadius:8, fontWeight:500,
+              transition:"all 0.15s ease",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor=T.red+"66"; e.currentTarget.style.color=T.red; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor=T.border; e.currentTarget.style.color=T.textDim; }}>
+              Exit
             </button>
-          );
-        })}
-      </nav>
+          </div>
+        )}
 
-      {/* Right side - user + exit */}
-      <div style={{ display:"flex", alignItems:"center", gap:14, flexShrink:0 }}>
-        <span style={{ fontSize:12, color:T.textMuted, fontFamily:"Inter", fontWeight:500 }}>
-          {profileName || <span style={{ color:T.red, fontWeight:600, textTransform:"capitalize" }}>{role}</span>}
-        </span>
-        <button onClick={onLogout} style={{
-          background:"none", border:`1px solid ${T.border}`,
-          color:T.textDim, fontSize:11, cursor:"pointer", fontFamily:"Inter",
-          padding:"5px 14px", borderRadius:8, fontWeight:500,
-          transition:"all 0.15s ease",
-        }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor=T.red+"66"; e.currentTarget.style.color=T.red; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor=T.border; e.currentTarget.style.color=T.textDim; }}>
-          Exit
-        </button>
+        {/* Hamburger - mobile only */}
+        {isMobile && (
+          <button
+            onClick={() => setMenuOpen(o => !o)}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            style={{
+              width:44, height:44, flexShrink:0,
+              display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:5,
+              background:"none", border:"none", cursor:"pointer",
+            }}
+          >
+            <span style={{
+              width:20, height:2, borderRadius:2, background:T.text,
+              transition:"transform 0.2s ease",
+              transform: menuOpen ? "translateY(7px) rotate(45deg)" : "none",
+            }} />
+            <span style={{
+              width:20, height:2, borderRadius:2, background:T.text,
+              opacity: menuOpen ? 0 : 1, transition:"opacity 0.2s ease",
+            }} />
+            <span style={{
+              width:20, height:2, borderRadius:2, background:T.text,
+              transition:"transform 0.2s ease",
+              transform: menuOpen ? "translateY(-7px) rotate(-45deg)" : "none",
+            }} />
+          </button>
+        )}
       </div>
+
+      {/* Mobile dropdown panel */}
+      {isMobile && menuOpen && (
+        <div style={{
+          position:"absolute", top:56, left:0, right:0,
+          background:T.bgCard, borderBottom:`1px solid ${T.border}`,
+          boxShadow:"0 12px 24px rgba(0,0,0,0.35)",
+          animation:"slideDown 0.18s ease",
+          display:"flex", flexDirection:"column", padding:"8px 0",
+        }}>
+          {items.map(item => {
+            const isActive = active === item.id;
+            return (
+              <button key={item.id} onClick={() => handleNav(item.id)} style={{
+                display:"flex", alignItems:"center", minHeight:48,
+                padding:"0 20px", border:"none", textAlign:"left",
+                background: isActive ? T.bgHover : "transparent",
+                color: isActive ? T.text : T.textMuted,
+                fontFamily:"Inter", fontSize:15, fontWeight: isActive ? 600 : 450,
+                borderLeft: isActive ? `3px solid ${T.red}` : "3px solid transparent",
+                cursor:"pointer",
+              }}>
+                {item.label}
+              </button>
+            );
+          })}
+          <div style={{ height:1, background:T.border, margin:"8px 20px" }} />
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 20px" }}>
+            <span style={{ fontSize:13, color:T.textMuted, fontFamily:"Inter", fontWeight:500 }}>
+              {profileName || <span style={{ color:T.red, fontWeight:600, textTransform:"capitalize" }}>{role}</span>}
+            </span>
+            <button onClick={onLogout} style={{
+              background:"none", border:`1px solid ${T.border}`,
+              color:T.textDim, fontSize:13, cursor:"pointer", fontFamily:"Inter",
+              padding:"8px 18px", minHeight:44, borderRadius:8, fontWeight:500,
+            }}>
+              Exit
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1330,8 +1493,9 @@ function EditProfilePage({ profile, onSave, onCancel }) {
 
 // --- Page Shells ---
 function PageShell({ title, subtitle, children }) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   return (
-    <div style={{ flex:1, padding:32, overflowY:"auto", animation:"fadeUp 0.3s ease" }}>
+    <div style={{ flex:1, padding: isMobile ? "20px 16px" : 32, overflowY:"auto", animation:"fadeUp 0.3s ease" }}>
       <h1 style={{ fontFamily:"DM Serif Display, serif", fontSize:28, fontWeight:400, letterSpacing:"-0.01em" }}>{title}</h1>
       {subtitle && <p style={{ color:T.textMuted, fontSize:14, marginTop:6 }}>{subtitle}</p>}
       <div style={{ marginTop:28 }}>{children}</div>
@@ -1569,6 +1733,7 @@ function DashboardPage({ role, onNav }) {
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [featuredIdx, setFeaturedIdx] = useState(0);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     (async () => {
@@ -1588,7 +1753,7 @@ function DashboardPage({ role, onNav }) {
 
   if (!loaded) return (
     <PageShell title="Home" subtitle="Loading...">
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(100px, 1fr))", gap:12 }}>
         {[1,2,3].map(i => (
           <div key={i} style={{ height:100, borderRadius:16, background:T.bgCard, border:`1px solid ${T.border}`, animation:"pulse 1.5s ease infinite" }} />
         ))}
@@ -1599,7 +1764,7 @@ function DashboardPage({ role, onNav }) {
   const featured = projectMembers.length > 0 ? projectMembers[featuredIdx % projectMembers.length] : null;
 
   return (
-    <div style={{ flex:1, padding:"48px 52px", overflowY:"auto", maxWidth:900, animation:"fadeUp 0.4s ease" }}>
+    <div style={{ flex:1, padding: isMobile ? "24px 16px" : "48px 52px", overflowY:"auto", maxWidth:900, animation:"fadeUp 0.4s ease" }}>
 
       {/* Hero - club identity left, stats right */}
       <div style={{ position:"relative", marginBottom:56 }}>
@@ -1956,12 +2121,12 @@ function ResourcesPage() {
   return (
     <PageShell title="Resources" subtitle="Tools and templates to build faster">
       {/* Tab bar */}
-      <div style={{ display:"flex", gap:6, marginBottom:24, flexWrap:"wrap" }}>
+      <div className="resource-tabs" style={{ display:"flex", gap:6, marginBottom:24, flexWrap:"wrap" }}>
         {tabs.map(t => {
           const active = activeTab === t.id;
           return (
             <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-              padding:"9px 18px", borderRadius:10, fontSize:13, fontWeight:active?700:500, fontFamily:"Inter",
+              padding:"9px 18px", minHeight:44, borderRadius:10, fontSize:13, fontWeight:active?700:500, fontFamily:"Inter",
               background:active?T.redSoft:"transparent", color:active?T.red:T.textMuted,
               border:`1.5px solid ${active?T.red:T.border}`, cursor:"pointer", transition:"all 0.15s",
             }}
@@ -2855,6 +3020,220 @@ function FounderToolkit() {
   );
 }
 
+// --- Attendance ("post-it board") ---
+const POSTIT_COLORS = ["#E8364E", "#F59E0B", "#3B82F6", "#8B5CF6", "#34D399"];
+
+function PostItCard({ name, content, index }) {
+  const color = POSTIT_COLORS[index % POSTIT_COLORS.length];
+  const rotate = ((index % 5) - 2) * 1.2;
+  return (
+    <div style={{
+      background: T.bgCard, border:`1px solid ${color}33`, borderTop:`3px solid ${color}`,
+      borderRadius:10, padding:"16px 18px", transform:`rotate(${rotate}deg)`,
+      animation:"slideUp 0.3s ease",
+    }}>
+      <p style={{ fontSize:14, color:T.text, lineHeight:1.5, marginBottom:10, wordBreak:"break-word" }}>{content}</p>
+      <p style={{ fontSize:12, fontWeight:600, color, textTransform:"uppercase", letterSpacing:"0.04em" }}>{name}</p>
+    </div>
+  );
+}
+
+function PostItBoard({ submissions }) {
+  if (submissions.length === 0) {
+    return <PlaceholderCard text="No check-ins yet - post-its will appear here the moment someone submits." />;
+  }
+  return (
+    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))", gap:16 }}>
+      {submissions.map((s, i) => (
+        <PostItCard key={s.id} name={s.member_name} content={s.content} index={i} />
+      ))}
+    </div>
+  );
+}
+
+// Exec view: start/end the session, display the code, watch the board fill in live.
+function AttendanceAdminView() {
+  const [session, setSession] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [justEnded, setJustEnded] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const s = await db.getActiveSession();
+      setSession(s);
+      if (s) setSubmissions(await db.getSubmissions(s.id));
+      setLoaded(true);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    return db.subscribeToSubmissions(session.id, (row) => {
+      setSubmissions(prev => prev.some(s => s.id === row.id) ? prev : [...prev, row]);
+    });
+  }, [session?.id]);
+
+  const startMeeting = async () => {
+    setStarting(true);
+    try {
+      const s = await db.startSession(generateAttendanceCode());
+      setSession(s);
+      setSubmissions([]);
+      setJustEnded(null);
+    } catch (e) { console.error(e); }
+    setStarting(false);
+  };
+
+  const endMeeting = async () => {
+    await db.endSession(session.id);
+    setJustEnded({ code: session.code, submissions });
+    setSession(null);
+    setSubmissions([]);
+  };
+
+  if (!loaded) return <PageShell title="Attendance" subtitle="Loading..."><div /></PageShell>;
+
+  if (!session) {
+    return (
+      <PageShell title="Attendance" subtitle="Start a meeting session to open check-ins">
+        {justEnded && (
+          <div style={{ marginBottom:36 }}>
+            <p style={{ fontSize:13, color:T.textMuted, marginBottom:14 }}>
+              Last session ({justEnded.code}) ended with {justEnded.submissions.length} check-in{justEnded.submissions.length !== 1 ? "s" : ""}.
+            </p>
+            <PostItBoard submissions={justEnded.submissions} />
+          </div>
+        )}
+        <div style={{ textAlign:"center", padding:"60px 20px" }}>
+          <button onClick={startMeeting} disabled={starting} style={{
+            padding:"18px 40px", minHeight:44, borderRadius:12, border:"none",
+            background:T.red, color:"#fff", fontFamily:"Inter", fontSize:16, fontWeight:700,
+            cursor: starting ? "default" : "pointer", opacity: starting ? 0.6 : 1,
+            boxShadow:`0 8px 24px ${T.redGlow}`,
+          }}>
+            {starting ? "Starting..." : "Start Meeting"}
+          </button>
+        </div>
+      </PageShell>
+    );
+  }
+
+  return (
+    <PageShell title="Attendance" subtitle="Session is live - display this code up front">
+      <div style={{
+        background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:16,
+        padding:"32px 24px", textAlign:"center", marginBottom:28,
+      }}>
+        <p style={{ fontSize:12, color:T.textDim, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:14 }}>Check-in code</p>
+        <p style={{
+          fontFamily:"DM Serif Display, serif", fontSize:"clamp(48px, 10vw, 84px)",
+          letterSpacing:"0.12em", color:T.text, marginBottom:20,
+        }}>{session.code}</p>
+        <button onClick={endMeeting} style={{
+          padding:"10px 24px", minHeight:44, borderRadius:8, border:`1px solid ${T.border}`,
+          background:"none", color:T.textDim, fontFamily:"Inter", fontSize:13, fontWeight:600, cursor:"pointer",
+        }}>End Session</button>
+      </div>
+
+      <p style={{ fontSize:13, color:T.textDim, marginBottom:14 }}>
+        {submissions.length} checked in
+      </p>
+      <PostItBoard submissions={submissions} />
+    </PageShell>
+  );
+}
+
+// Member/mentor view: enter the code, drop a post-it, watch the board.
+function AttendanceCheckIn() {
+  const [phase, setPhase] = useState("code"); // code | form | board
+  const [session, setSession] = useState(null);
+  const [codeInput, setCodeInput] = useState("");
+  const [error, setError] = useState("");
+  const [checking, setChecking] = useState(false);
+  const [name, setName] = useState("");
+  const [content, setContent] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [dupWarning, setDupWarning] = useState(false);
+  const [submissions, setSubmissions] = useState([]);
+
+  useEffect(() => {
+    if (phase !== "board" || !session) return;
+    (async () => setSubmissions(await db.getSubmissions(session.id)))();
+    return db.subscribeToSubmissions(session.id, (row) => {
+      setSubmissions(prev => prev.some(s => s.id === row.id) ? prev : [...prev, row]);
+    });
+  }, [phase, session?.id]);
+
+  const checkCode = async () => {
+    if (!codeInput.trim() || checking) return;
+    setChecking(true); setError("");
+    const s = await db.findSessionByCode(codeInput);
+    if (s) { setSession(s); setPhase("form"); }
+    else setError("That code didn't match - check with someone at the front.");
+    setChecking(false);
+  };
+
+  const submit = async () => {
+    if (!name.trim() || !content.trim() || submitting) return;
+    setSubmitting(true); setError("");
+    const res = await db.submitPostIt(session.id, name, content);
+    setSubmitting(false);
+    if (res.ok) setPhase("board");
+    else if (res.reason === "duplicate") { setDupWarning(true); setPhase("board"); }
+    else setError("Something went wrong - try again.");
+  };
+
+  if (phase === "code") {
+    return (
+      <PageShell title="Attendance" subtitle="Enter the code on screen to check in">
+        <div style={{ maxWidth:360 }}>
+          <Input label="Meeting code" value={codeInput} onChange={v => setCodeInput(v.toUpperCase())} placeholder="e.g. 7F3KQ" />
+          {error && <p style={{ color:T.red, fontSize:13, marginTop:-8, marginBottom:16 }}>{error}</p>}
+          <button onClick={checkCode} disabled={checking} style={{
+            width:"100%", padding:"14px", minHeight:44, borderRadius:10, border:"none",
+            background:T.red, color:"#fff", fontFamily:"Inter", fontSize:14, fontWeight:700,
+            cursor: checking ? "default" : "pointer", opacity: checking ? 0.6 : 1,
+          }}>{checking ? "Checking..." : "Continue"}</button>
+        </div>
+      </PageShell>
+    );
+  }
+
+  if (phase === "form") {
+    return (
+      <PageShell title="Attendance" subtitle="You're in - share something you're proud of this week">
+        <div style={{ maxWidth:420 }}>
+          <Input label="Your name" value={name} onChange={setName} placeholder="First and last name" />
+          <Input label="Something you're proud of this week" value={content} onChange={setContent} placeholder="A win, progress on a project, anything." textarea />
+          {error && <p style={{ color:T.red, fontSize:13, marginBottom:16 }}>{error}</p>}
+          <button onClick={submit} disabled={submitting} style={{
+            width:"100%", padding:"14px", minHeight:44, borderRadius:10, border:"none",
+            background:T.red, color:"#fff", fontFamily:"Inter", fontSize:14, fontWeight:700,
+            cursor: submitting ? "default" : "pointer", opacity: submitting ? 0.6 : 1,
+          }}>{submitting ? "Posting..." : "Post it"}</button>
+        </div>
+      </PageShell>
+    );
+  }
+
+  return (
+    <PageShell title="Attendance" subtitle="You're checked in - here's what everyone's proud of">
+      {dupWarning && (
+        <p style={{ fontSize:13, color:T.textDim, marginBottom:16 }}>
+          Looks like you already checked in this session - here's the board.
+        </p>
+      )}
+      <PostItBoard submissions={submissions} />
+    </PageShell>
+  );
+}
+
+function AttendancePage({ role }) {
+  return role === "admin" ? <AttendanceAdminView /> : <AttendanceCheckIn />;
+}
+
 // --- Admin Create Profile ---
 function AdminCreateProfile({ role, onSave, onCancel }) {
   const isMember = role === "member";
@@ -3024,12 +3403,12 @@ function AdminPage() {
       )}
 
       {/* Tabs */}
-      <div style={{ display:"flex", gap:6, marginBottom:24 }}>
+      <div className="admin-tabs" style={{ display:"flex", gap:6, marginBottom:24 }}>
         {adminTabs.map(t => {
           const active = tab === t.id;
           return (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
-              padding:"9px 18px", borderRadius:10, fontSize:13, fontWeight:active?700:500, fontFamily:"Inter",
+              padding:"9px 18px", minHeight:44, borderRadius:10, fontSize:13, fontWeight:active?700:500, fontFamily:"Inter",
               background:active?T.redSoft:"transparent", color:active?T.red:T.textMuted,
               border:`1.5px solid ${active?T.red:T.border}`, cursor:"pointer", transition:"all 0.15s",
               display:"flex", alignItems:"center", gap:6,
@@ -3231,6 +3610,7 @@ function AppShell({ role, profile, onLogout, onProfileUpdate }) {
     dashboard: <DashboardPage role={role} onNav={setPage} />,
     members: <MembersPage />,
     resources: <ResourcesPage />,
+    attendance: <AttendancePage role={role} />,
     admin: <AdminPage />,
     myprofile: editing
       ? <EditProfilePage profile={profile} onSave={(d) => { onProfileUpdate(d); setEditing(false); }} onCancel={() => setEditing(false)} />
