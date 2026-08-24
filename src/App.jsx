@@ -1155,6 +1155,7 @@ const NAV_ITEMS = [
   { id:"members", label:"Members", icon:"" },
   { id:"resources", label:"Resources", icon:"" },
   { id:"attendance", label:"Attendance", icon:"" },
+  { id:"pitchnight", label:"Pitch Night", icon:"", href:"/arena" },
   { id:"myprofile", label:"My Profile", icon:"" },
 ];
 const ADMIN_NAV = [{ id:"admin", label:"Admin Panel", icon:"" }];
@@ -1169,7 +1170,11 @@ function Sidebar({ active, onNav, role, onLogout, profileName, hasProfile }) {
   // Close the mobile menu on any nav change so it never gets left open
   useEffect(() => { setMenuOpen(false); }, [active]);
 
-  const handleNav = (id) => { onNav(id); setMenuOpen(false); };
+  const handleNav = (id) => {
+    const item = items.find(i => i.id === id);
+    if (item?.href) { window.location.assign(item.href); return; }
+    onNav(id); setMenuOpen(false);
+  };
 
   return (
     <div style={{ position:"sticky", top:0, zIndex:100 }}>
