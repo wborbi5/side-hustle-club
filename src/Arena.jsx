@@ -12,7 +12,6 @@ const supabase = createClient(
 
 const STARTING_BALANCE = 100000;
 const PITCH_SECONDS = 60;
-const CHECK_SIZES = [5000, 10000, 25000, 50000];
 const PLAYER_KEY = "pitch-night-player";
 
 const fmt = (n) => "$" + n.toLocaleString("en-US");
@@ -102,7 +101,7 @@ function Play({ nav }) {
   const [player, setPlayer] = useState(null);
   const [rows, setRows] = useState([]);
   const [spent, setSpent] = useState(0);
-  const [check, setCheck] = useState(10000);
+  const [checkInput, setCheckInput] = useState("");
   const [busy, setBusy] = useState(null);
   const [toast, setToast] = useState("");
   const toastTimer = useRef(null);
@@ -140,9 +139,14 @@ function Play({ nav }) {
   }
 
   const balance = STARTING_BALANCE - spent;
+  const check = parseInt(checkInput.replace(/[^0-9]/g, ""), 10) || 0;
 
   async function invest(companyId, companyName) {
     if (!player || busy) return;
+    if (check <= 0) {
+      showToast("Type an amount first");
+      return;
+    }
     if (check > balance) {
       showToast("Not enough funds left");
       return;
@@ -172,19 +176,18 @@ function Play({ nav }) {
       </div>
 
       <div style={{ marginTop: 20 }}>
-        <p className="kicker">Your check size</p>
-        <div className="chips" style={{ marginTop: 10 }}>
-          {CHECK_SIZES.map((c) => (
-            <button
-              key={c}
-              type="button"
-              className={"chip" + (check === c ? " on" : "")}
-              onClick={() => setCheck(c)}
-            >
-              ${c / 1000}k
-            </button>
-          ))}
-        </div>
+        <label className="kicker" htmlFor="pn-check">
+          Your check size
+        </label>
+        <input
+          id="pn-check"
+          className="field"
+          style={{ marginTop: 10 }}
+          inputMode="numeric"
+          value={checkInput}
+          onChange={(e) => setCheckInput(e.target.value)}
+          placeholder="Type any amount, e.g. 12500"
+        />
       </div>
 
       <div style={{ marginTop: 24 }}>
@@ -207,10 +210,10 @@ function Play({ nav }) {
               <button
                 type="button"
                 className="btn btn--small"
-                disabled={busy === r.id || balance < check}
+                disabled={busy === r.id || check <= 0 || balance < check}
                 onClick={() => invest(r.id, r.name)}
               >
-                {busy === r.id ? "…" : `Invest ${fmt(check)}`}
+                {busy === r.id ? "…" : check > 0 ? `Invest ${fmt(check)}` : "Invest"}
               </button>
             </div>
           </div>
