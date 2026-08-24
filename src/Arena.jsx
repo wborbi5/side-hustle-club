@@ -334,6 +334,7 @@ function Board() {
   const [joinUrl, setJoinUrl] = useState("");
   const [seconds, setSeconds] = useState(PITCH_SECONDS);
   const [running, setRunning] = useState(false);
+  const [featuredId, setFeaturedId] = useState(null);
   const tick = useRef(null);
 
   useEffect(() => {
@@ -377,6 +378,13 @@ function Board() {
     setSeconds(PITCH_SECONDS);
   }
 
+  function featureCompany(id) {
+    setFeaturedId(id);
+    resetTimer();
+  }
+
+  const featured = rows.find((r) => r.id === featuredId) || null;
+  const standings = featured ? rows.filter((r) => r.id !== featured.id) : rows;
   const maxRaised = Math.max(1, ...rows.map((r) => r.raised));
   const totalRaised = rows.reduce((s, r) => s + r.raised, 0);
 
@@ -427,38 +435,79 @@ function Board() {
         </div>
 
         <div>
+          {featured && (
+            <div className="pitchnow">
+              <div className="pitchnow-head">
+                <p className="kicker">Now pitching</p>
+                <button
+                  type="button"
+                  className="btn btn--small btn--ghost"
+                  onClick={() => setFeaturedId(null)}
+                >
+                  Done
+                </button>
+              </div>
+              <div className="pitchnow-name">{featured.name}</div>
+              <div className="pitchnow-founder">{featured.founder}</div>
+              {featured.tagline && (
+                <div className="pitchnow-tagline">{featured.tagline}</div>
+              )}
+              <div className="pitchnow-raised">
+                <span className="money">{fmt(featured.raised)}</span>
+                <span className="lb-backers" style={{ marginLeft: 10 }}>
+                  {featured.backers} {featured.backers === 1 ? "backer" : "backers"}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {featured && standings.length > 0 && (
+            <p className="kicker" style={{ margin: "18px 0 8px" }}>
+              Standings
+            </p>
+          )}
           {rows.length === 0 && (
             <p className="sub">
               Waiting for the first company. Founders: scan the code, then tap
               &ldquo;Add your company.&rdquo;
             </p>
           )}
-          {rows.map((r, i) => (
-            <div className={"lb-row" + (i === 0 ? " first" : "")} key={r.id}>
-              <div className="rank">{i + 1}</div>
-              <div>
-                <div className="lb-name">
-                  {r.name}
-                  {i === 0 && r.raised > 0 && (
-                    <span className="leader-tag">Leader</span>
-                  )}
+          {standings.map((r) => {
+            const rank = rows.indexOf(r) + 1;
+            return (
+              <div className={"lb-row" + (rank === 1 ? " first" : "")} key={r.id}>
+                <div className="rank">{rank}</div>
+                <div>
+                  <div className="lb-name">
+                    {r.name}
+                    {rank === 1 && r.raised > 0 && (
+                      <span className="leader-tag">Leader</span>
+                    )}
+                  </div>
+                  <div className="lb-founder">{r.founder}</div>
+                  <div className="lb-bartrack">
+                    <div
+                      className="lb-bar"
+                      style={{ width: `${(r.raised / maxRaised) * 100}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="lb-founder">{r.founder}</div>
-                <div className="lb-bartrack">
-                  <div
-                    className="lb-bar"
-                    style={{ width: `${(r.raised / maxRaised) * 100}%` }}
-                  />
+                <div className="lb-side">
+                  <div className="lb-raised money">{fmt(r.raised)}</div>
+                  <div className="lb-backers">
+                    {r.backers} {r.backers === 1 ? "backer" : "backers"}
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn--small btn--ghost lb-pitchbtn"
+                    onClick={() => featureCompany(r.id)}
+                  >
+                    Pitch now
+                  </button>
                 </div>
               </div>
-              <div>
-                <div className="lb-raised money">{fmt(r.raised)}</div>
-                <div className="lb-backers">
-                  {r.backers} {r.backers === 1 ? "backer" : "backers"}
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </main>
