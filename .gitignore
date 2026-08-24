@@ -17,3 +17,6 @@ dist/
 
 # supabase CLI local link state
 supabase/.temp/
+
+# vercel CLI local link state
+.vercel
