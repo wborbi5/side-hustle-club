@@ -2141,6 +2141,8 @@ const RECRUITMENT_EVENTS = [
   { title: "Mega Fair", date: "August 30" },
   { title: "Meet the B-Orgs", date: "August 31" },
   { title: "SHC Info Night", date: "Tuesday, Sept 8 · 7:30–8:30pm", location: "Farmer School of Business, Room 0026" },
+  { title: "First Round Interviews", date: "Thursday, Sept 24 · 6:00pm–TBD" },
+  { title: "Second Round Interviews", date: "Tuesday, Sept 29 · 6:00pm–TBD" },
 ];
 
 const EXEC_BOARD = [
