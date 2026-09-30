@@ -1,0 +1,291 @@
+/* Hustle Swap — builds on arena.css tokens (.arena scope) */
+
+.sw-shell {
+  max-width: 720px;
+}
+
+/* ── Tab bar ────────────────────────────────────────────────── */
+.sw-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.sw-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.sw-tab,
+.sw-home {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-decoration: none;
+}
+
+.sw-home {
+  color: var(--accent);
+  margin-right: 4px;
+}
+
+.sw-tab.on {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* ── Forms ──────────────────────────────────────────────────── */
+.sw-textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.sw-hint {
+  font-size: 14px;
+  color: var(--dim);
+  margin: -2px 0 10px;
+}
+
+.sw-error {
+  color: var(--accent);
+}
+
+.sw-filerow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.sw-filerow--link:hover {
+  border-color: var(--accent);
+}
+
+.sw-ext {
+  flex: none;
+  min-width: 44px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.sw-filename {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sw-size {
+  flex: none;
+  font-size: 13px;
+  color: var(--dim);
+}
+
+.sw-x {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dim);
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.sw-x:hover {
+  color: var(--accent);
+}
+
+.sw-logo-preview {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.sw-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  margin-top: 16px;
+  font-size: 15px;
+  color: var(--dim);
+  cursor: pointer;
+}
+
+.sw-check input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
+
+/* ── Company cards ──────────────────────────────────────────── */
+.sw-company-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.sw-company h3 {
+  overflow-wrap: anywhere;
+}
+
+.sw-company--hl {
+  border-color: var(--accent);
+}
+
+.sw-logo {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 4px;
+  object-fit: contain;
+  background: #fff;
+}
+
+.sw-logo--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-family: "DM Serif Display", serif;
+  font-size: 26px;
+  color: var(--accent);
+}
+
+.sw-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 6px;
+  font-size: 15px;
+  color: var(--accent);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.sw-files {
+  margin-top: 12px;
+}
+
+/* ── Wheel ──────────────────────────────────────────────────── */
+.sw-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.sw-wheel-wrap {
+  position: relative;
+  width: min(100%, 520px);
+  margin: 28px auto 20px;
+}
+
+.sw-wheel {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.sw-pointer {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-top: 26px solid var(--ink);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+
+.sw-winner {
+  margin-top: 20px;
+}
+
+.sw-winner .pitchnow-name {
+  font-size: clamp(30px, 8vw, 52px);
+  overflow-wrap: anywhere;
+}
+
+/* ── Prompt ─────────────────────────────────────────────────── */
+.sw-prompt {
+  margin-top: 16px;
+  padding: 18px;
+  max-height: 60vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+}
+
+.sw-help {
+  margin-top: 20px;
+}
+
+/* ── Feed ───────────────────────────────────────────────────── */
+.sw-post {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.sw-post-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--dim);
+}
+
+.sw-post-author {
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.sw-post-body {
+  margin-top: 8px;
+  font-size: 17px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

@@ -1156,6 +1156,7 @@ const NAV_ITEMS = [
   { id:"resources", label:"Resources", icon:"" },
   { id:"attendance", label:"Attendance", icon:"" },
   { id:"pitchnight", label:"Pitch Night", icon:"", href:"/arena" },
+  { id:"hustleswap", label:"Hustle Swap", icon:"", href:"/swap" },
   { id:"myprofile", label:"My Profile", icon:"" },
 ];
 const ADMIN_NAV = [{ id:"admin", label:"Admin Panel", icon:"" }];
